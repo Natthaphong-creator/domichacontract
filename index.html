@@ -2111,7 +2111,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   } = window.docx;
 
   const FONT = "TH SarabunPSK";
-  const BS = 24, SS = 20, HS = 34, TS = 40;
+  const BS = 24, SS = 22, HS = 32, TS = 36;
   const NAVY = '1A3A5C', RED = '8B0000', GR = '666666', BC = '222222';
   const NB = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
   const noBorders = { top: NB, bottom: NB, left: NB, right: NB };
@@ -2123,13 +2123,13 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const chk = (on) => new TextRun({ text: on ? '☑ ' : '☐ ', font: 'Segoe UI Symbol', size: BS, color: BC });
   const p = (runs, o = {}) => new Paragraph({
     alignment: o.align ?? AlignmentType.THAI_DISTRIBUTE,
-    spacing: { line: 276, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? 60 },
+    spacing: { line: 300, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? 80 },
     indent: o.indent, keepNext: o.keepNext,
     children: Array.isArray(runs) ? runs : [runs],
   });
   const left   = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.LEFT });
   const center = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.CENTER });
-  const h      = (text) => p([t(text, { bold: true, color: NAVY })], { before: 80, after: 30, align: AlignmentType.LEFT, keepNext: true });
+  const h      = (text) => p([t(text, { bold: true, color: NAVY })], { before: 140, after: 40, align: AlignmentType.LEFT, keepNext: true });
   const item   = (num, runs) => p([t(num + '  '), ...runs], { indent: { left: 540, hanging: 400 } });
   const check  = (on, runs) => p([chk(on), ...runs], { indent: { left: 540, hanging: 340 }, align: AlignmentType.LEFT });
   const body   = (runs) => p(runs, { indent: { firstLine: 720 } });
