@@ -706,7 +706,7 @@
       2. ตรวจสอบข้อมูลใน "ตัวอย่างข้อมูล"<br>
       3. กดปุ่ม <b>สร้าง 2 ฉบับ + อัปโหลด Drive</b> ระบบจะสร้างต้นฉบับ (สีแดง) และคู่ฉบับ (สีน้ำเงิน) แล้วเก็บในโฟลเดอร์สาขาให้อัตโนมัติ<br>
       4. ดาวน์โหลดไฟล์ได้จากโฟลเดอร์ใน Drive<br><br>
-      <b>📋 เลขสาขาถัดไป:</b> DMC0022
+      <b>📋 เลขสาขาถัดไป:</b> <span id="nextBranchTip">DMC0022</span>
     </div>
 
   </div><!-- end sidebar -->
@@ -1204,6 +1204,7 @@ FIELDS.forEach(([id]) => {
   if (el) el.addEventListener('input', updatePreview);
 });
 updatePreview();
+setTimeout(() => { if (typeof refreshNextBranchNo === 'function') refreshNextBranchNo(false); }, 0);
 
 function getData() {
   return {
@@ -1221,9 +1222,42 @@ function getData() {
 }
 function v(id) { return (document.getElementById(id)?.value || '').trim(); }
 
+// ─── เลขสาขาถัดไป (คำนวณจากชีตอัตโนมัติ) ───────────────────────
+let _nextBranchNo = 'DMC0022';
+function calcNextBranchNo(list) {
+  let max = 0;
+  (list || []).forEach(b => {
+    const m = String(b.branchNo || '').match(/^DMC(\d+)$/i);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+  return max ? 'DMC' + String(max + 1).padStart(4, '0') : null;
+}
+function applyNextBranchNo(n, force) {
+  if (!n) return;
+  _nextBranchNo = n;
+  const el = document.getElementById('branchNo');
+  if (el && (force || !el.dataset.touched)) {
+    el.value = n;
+    delete el.dataset.touched;
+    updatePreview();
+  }
+  const tip = document.getElementById('nextBranchTip');
+  if (tip) tip.textContent = n;
+}
+async function refreshNextBranchNo(force) {
+  try {
+    const url = (document.getElementById('appsScriptUrl')?.value || '').trim();
+    if (!url) return;
+    const res = await fetch(url, { method: 'POST', body: JSON.stringify({ action: 'getAllBranches' }) });
+    const json = await res.json();
+    if (json.success) applyNextBranchNo(calcNextBranchNo((json.data || {}).branches), force);
+  } catch (e) { /* ใช้เลขเดิมต่อไป */ }
+}
+document.getElementById('branchNo')?.addEventListener('input', e => { e.target.dataset.touched = '1'; });
+
 function resetForm() {
   document.getElementById('contractForm').reset();
-  document.getElementById('branchNo').value = 'DMC0022';
+  document.getElementById('branchNo').value = _nextBranchNo;
   updatePreview();
   log('ล้างแบบฟอร์มแล้ว', 'warn');
 }
@@ -1264,6 +1298,13 @@ async function generateBoth() {
       uploaded = await uploadToDrive(origBlob, copyBlob, d, url);
     } else {
       log('ℹ ไม่ได้ใส่ Apps Script URL — ข้ามขั้นตอนอัปโหลด Drive', 'warn');
+    }
+    if (uploaded) {
+      await refreshNextBranchNo(true);
+      log(`📋 เลขสาขาถัดไป: ${_nextBranchNo}`, 'ok');
+    } else {
+      const mm = String(d.branchNo || '').match(/^DMC(\d+)$/i);
+      if (mm) applyNextBranchNo('DMC' + String(parseInt(mm[1], 10) + 1).padStart(4, '0'), true);
     }
     if (!uploaded) {
       log('ℹ อัปโหลด Drive ไม่สำเร็จ — ดาวน์โหลดไฟล์ลงเครื่องแทน', 'warn');
