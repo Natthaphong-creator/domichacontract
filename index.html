@@ -2106,9 +2106,15 @@ function validateCancelForm() {
 async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opts) {
   opts = opts || {};
   const {
-    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
     AlignmentType, BorderStyle, WidthType, VerticalAlign
   } = window.docx;
+
+  let logoData = null;
+  try {
+    const li = document.querySelector('.logo img');
+    if (li) logoData = new Uint8Array(await (await fetch(li.src)).arrayBuffer());
+  } catch (e) { logoData = null; }
 
   const FONT = "TH SarabunPSK";
   const BS = 24, SS = 22, HS = 32, TS = 36;
@@ -2158,8 +2164,8 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   });
 
   const header = (docTitle, sub) => [
-    center([t('บริษัท โดมิพลัสกรุ๊ป จำกัด', { size: TS, bold: true, color: NAVY })], { after: 0 }),
-    center([t('DomiCha Franchise System', { size: SS, color: GR })], { after: 60 }),
+    ...(logoData ? [center([new ImageRun({ data: logoData, type: 'png', transformation: { width: 64, height: 64 } })], { after: 20 })] : []),
+    center([t('บริษัท โดมิพลัสกรุ๊ป จำกัด', { size: TS, bold: true, color: NAVY })], { after: 60 }),
     rule(),
     center([t(docTitle, { size: HS, bold: true, color: RED })], { after: 0 }),
     center([t(sub, { size: SS, color: GR })], { after: 80 }),
