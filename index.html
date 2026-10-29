@@ -641,6 +641,31 @@
       </div>
     </div>
 
+    <!-- Company-owned branch -->
+    <div class="card">
+      <div class="card-header"><span class="icon">🏬</span> เพิ่มสาขาบริษัท (ไม่ใช่แฟรนไชส์)</div>
+      <div class="card-body">
+        <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">สำหรับสาขาที่บริษัทดำเนินการเอง ไม่ต้องทำสัญญา ข้อมูลจะเข้า Sheet และแสดงใน Dashboard แยกประเภท</p>
+        <div class="cancel-field"><label>เลขสาขา *</label><input type="text" id="cmpBranchNo" placeholder="เช่น COM001"></div>
+        <div class="cancel-field"><label>ชื่อสาขา *</label><input type="text" id="cmpBranchName" placeholder="เช่น เซ็นทรัลชลบุรี"></div>
+        <div class="cancel-field"><label>จังหวัด *</label><input type="text" id="cmpProvince" placeholder="เช่น ชลบุรี"></div>
+        <div class="cancel-field"><label>ผู้ดูแลสาขา</label><input type="text" id="cmpManager" placeholder="ชื่อผู้ดูแล / ผู้จัดการ"></div>
+        <div class="cancel-field"><label>ที่อยู่</label><input type="text" id="cmpAddress" placeholder="ที่อยู่สาขา"></div>
+        <div class="cancel-field"><label>ลิงก์แผนที่</label><input type="text" id="cmpLocation" placeholder="https://maps.app.goo.gl/…"></div>
+        <div class="cancel-field"><label>วันที่เปิดสาขา</label><input type="text" id="cmpDateOpened" placeholder="เว้นว่าง = วันนี้ (ถ้า ACTIVE)"></div>
+        <div class="cancel-field"><label>สถานะ</label>
+          <select id="cmpStatus" style="width:100%;padding:8px 10px;border:1px solid #F0CBA8;border-radius:6px;font-size:13px;background:#FFFBF7;color:#3D1F06;">
+            <option value="ACTIVE">ACTIVE · เปิดแล้ว</option>
+            <option value="TRAINING">TRAINING · เตรียมเปิด/อบรม</option>
+          </select>
+        </div>
+        <button class="btn btn-outline" id="btnAddCompany" onclick="addCompanyBranch()" style="width:100%;margin-top:6px;">
+          <span id="spinAddCompany" class="spin"></span>
+          ➕ บันทึกสาขาบริษัท
+        </button>
+      </div>
+    </div>
+
     <!-- Tips -->
     <div class="tips">
       <b>💡 วิธีใช้งาน:</b><br>
@@ -662,6 +687,11 @@
       <div class="db-title">Dashboard — สถานะแฟรนไชส์</div>
       <div class="db-sub">ภาพรวมสาขาทั้งหมดแยกตามสถานะและจังหวัด</div>
     </div>
+    <select id="filterType" onchange="renderDashboardAll()" style="margin-left:auto;margin-right:10px;padding:7px 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:8px;font-size:13px;background:rgba(255,255,255,.9);color:#3D1F06;">
+      <option value="">ทุกประเภท</option>
+      <option value="FRANCHISE">แฟรนไชส์</option>
+      <option value="COMPANY">สาขาบริษัท</option>
+    </select>
     <button class="btn-refresh" id="btnRefresh" onclick="loadDashboard()">
       <span class="refresh-icon">↻</span> โหลดข้อมูล
     </button>
@@ -741,12 +771,13 @@
             <th>เลขสาขา</th>
             <th>ชื่อสาขา</th>
             <th>จังหวัด</th>
-            <th>ชื่อแฟรนไชส์ซี</th>
+            <th>ประเภท</th>
+            <th>แฟรนไชส์ซี / ผู้ดูแล</th>
             <th>สถานะ</th>
             <th>วันที่สร้าง</th>
             <th>เปิดสาขา</th>
           </tr></thead>
-          <tbody id="branchTbody"><tr><td colspan="7" class="db-empty">กด "โหลดข้อมูล" เพื่อดูข้อมูล</td></tr></tbody>
+          <tbody id="branchTbody"><tr><td colspan="8" class="db-empty">กด "โหลดข้อมูล" เพื่อดูข้อมูล</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -945,18 +976,34 @@ async function loadDashboard() {
     if (!json.success) throw new Error(json.error || 'API error');
 
     _dashData = json.data.branches || [];
-    renderKPI(_dashData);
-    renderProvinceTable(_dashData);
-    renderBranchTable();
+    renderDashboardAll();
 
     const now = new Date().toLocaleString('th-TH');
-    document.getElementById('dbStatus').textContent = `อัปเดตล่าสุด: ${now} · ${_dashData.length} สาขา`;
+    document.getElementById('dbStatus').textContent = `อัปเดตล่าสุด: ${now} · ${_dashData.length} สาขา (บริษัท ${_dashData.filter(b => b.branchType === 'COMPANY').length})`;
   } catch(err) {
     document.getElementById('dbStatus').textContent = '❌ โหลดไม่สำเร็จ: ' + err.message;
   } finally {
     icon.classList.remove('spin-anim');
     btn.disabled = false;
   }
+}
+
+function typeFiltered() {
+  const t = (document.getElementById('filterType') || {}).value || '';
+  return t ? _dashData.filter(b => (b.branchType || 'FRANCHISE') === t) : _dashData;
+}
+
+function renderDashboardAll() {
+  const d = typeFiltered();
+  renderKPI(d);
+  renderProvinceTable(d);
+  renderBranchTable();
+}
+
+function typeBadge(t) {
+  return (t === 'COMPANY')
+    ? '<span class="sb" style="background:#dbeafe;color:#1d4ed8">บริษัท</span>'
+    : '<span class="sb" style="background:#fef3c7;color:#b45309">แฟรนไชส์</span>';
 }
 
 function renderKPI(data) {
@@ -996,7 +1043,7 @@ function renderBranchTable() {
   const statusF   = document.getElementById('filterStatus').value;
   const provinceF = (document.getElementById('filterProvince').value || '').trim().toLowerCase();
 
-  const filtered = _dashData.filter(b => {
+  const filtered = typeFiltered().filter(b => {
     if (statusF   && b.status !== statusF) return false;
     if (provinceF && !(b.province || '').toLowerCase().includes(provinceF)) return false;
     return true;
@@ -1010,6 +1057,7 @@ function renderBranchTable() {
       <td><b>${b.branchNo}</b> ${folder}</td>
       <td>${b.branchName || '—'}</td>
       <td>${b.province || '—'}</td>
+      <td>${typeBadge(b.branchType)}</td>
       <td>${b.customerName || '—'}</td>
       <td>${statusBadge(b.status)}</td>
       <td>${b.dateGenerated || '—'}</td>
@@ -1017,7 +1065,7 @@ function renderBranchTable() {
     </tr>`;
   }).join('');
 
-  document.getElementById('branchTbody').innerHTML = rows || '<tr><td colspan="7" class="db-empty">ไม่มีข้อมูลที่ตรงกัน</td></tr>';
+  document.getElementById('branchTbody').innerHTML = rows || '<tr><td colspan="8" class="db-empty">ไม่มีข้อมูลที่ตรงกัน</td></tr>';
 }
 </script>
 
@@ -1664,6 +1712,40 @@ function getAppsScriptUrl() {
   return url;
 }
 
+async function addCompanyBranch() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const branchNo = v('cmpBranchNo'), branchName = v('cmpBranchName'), province = v('cmpProvince');
+  if (!branchNo || !branchName || !province) { alert('กรุณากรอก เลขสาขา ชื่อสาขา และจังหวัด'); return; }
+  const url = getAppsScriptUrl();
+  if (!url) return;
+
+  setBusy(true, 'btnAddCompany', 'spinAddCompany');
+  log('─────────────────────────────');
+  log(`🏬 บันทึกสาขาบริษัท ${branchNo}…`);
+  try {
+    const res = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'addCompanyBranch', branchNo, branchName, province,
+        manager: v('cmpManager'), address: v('cmpAddress'), locationLink: v('cmpLocation'),
+        dateOpened: v('cmpDateOpened'), status: v('cmpStatus')
+      })
+    });
+    const result = await res.json();
+    if (result.success) {
+      log(`✓ เพิ่มสาขาบริษัท ${branchNo} สำเร็จ (${result.data.status})`, 'ok');
+      ['cmpBranchNo','cmpBranchName','cmpProvince','cmpManager','cmpAddress','cmpLocation','cmpDateOpened']
+        .forEach(id => { document.getElementById(id).value = ''; });
+    } else {
+      log(`✗ ${result.error}`, 'err');
+    }
+  } catch (e) {
+    log(`✗ ${e.message}`, 'err');
+  } finally {
+    setBusy(false, 'btnAddCompany', 'spinAddCompany');
+  }
+}
+
 async function searchBranchInfo() {
   const branchNo = (document.getElementById('mgrBranchNo')?.value || '').trim();
   if (!branchNo) { alert('กรุณาระบุเลขสาขา'); return; }
@@ -1736,7 +1818,8 @@ function renderBranchInfo(d) {
   const statusUpdateBox = document.getElementById('statusUpdateBox');
   const isCancelled     = s.startsWith('CANCELLED');
 
-  cancelSection.classList.toggle('visible', !isCancelled);
+  const isCompany = d.branchType === 'COMPANY';
+  cancelSection.classList.toggle('visible', !isCancelled && !isCompany);
   statusUpdateBox.style.display = (!isCancelled && s !== 'ACTIVE') ? 'block' : 'none';
 
   // Show info box
