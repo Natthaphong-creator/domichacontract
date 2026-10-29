@@ -482,18 +482,12 @@
 
     <!-- Actions -->
     <div class="card">
-      <div class="card-header"><span class="icon">⬇️</span> สร้างและดาวน์โหลด</div>
+      <div class="card-header"><span class="icon">⬇️</span> สร้างและอัปโหลด</div>
       <div class="card-body">
         <div class="btn-row">
           <button class="btn btn-primary" id="btnBoth" onclick="generateBoth()">
             <span id="spinBoth" class="spin"></span>
             🧋 สร้าง 2 ฉบับ + อัปโหลด Drive
-          </button>
-          <button class="btn btn-red" id="btnOrig" onclick="generateOne('ต้นฉบับ','CC2200')">
-            📄 ดาวน์โหลด ต้นฉบับ (สีแดง)
-          </button>
-          <button class="btn btn-blue" id="btnCopy" onclick="generateOne('คู่ฉบับ','1155BB')">
-            📄 ดาวน์โหลด คู่ฉบับ (สีน้ำเงิน)
           </button>
           <button class="btn btn-outline" onclick="resetForm()">
             🔄 ล้างแบบฟอร์ม
@@ -710,8 +704,8 @@
       <b>💡 วิธีใช้งาน:</b><br>
       1. กรอกข้อมูลทุกช่องที่มีเครื่องหมาย <b>*</b><br>
       2. ตรวจสอบข้อมูลใน "ตัวอย่างข้อมูล"<br>
-      3. กดปุ่ม <b>สร้าง 2 ฉบับ</b> เพื่อดาวน์โหลดทั้ง ต้นฉบับ และ คู่ฉบับ<br>
-      4. ไฟล์ .docx จะบันทึกอัตโนมัติ<br><br>
+      3. กดปุ่ม <b>สร้าง 2 ฉบับ + อัปโหลด Drive</b> ระบบจะสร้างต้นฉบับ (สีแดง) และคู่ฉบับ (สีน้ำเงิน) แล้วเก็บในโฟลเดอร์สาขาให้อัตโนมัติ<br>
+      4. ดาวน์โหลดไฟล์ได้จากโฟลเดอร์ใน Drive<br><br>
       <b>📋 เลขสาขาถัดไป:</b> DMC0022
     </div>
 
@@ -1262,13 +1256,19 @@ async function generateBoth() {
   try {
     const origBlob = await generateOne('ต้นฉบับ', 'CC2200', d, false);
     const copyBlob = await generateOne('คู่ฉบับ', '1155BB', d, false);
-    log('✓ สร้างและดาวน์โหลดสำเร็จทั้ง 2 ฉบับ', 'ok');
+    log('✓ สร้างสำเร็จทั้ง 2 ฉบับ', 'ok');
 
     const url = (document.getElementById('appsScriptUrl')?.value || '').trim();
+    let uploaded = false;
     if (url) {
-      await uploadToDrive(origBlob, copyBlob, d, url);
+      uploaded = await uploadToDrive(origBlob, copyBlob, d, url);
     } else {
       log('ℹ ไม่ได้ใส่ Apps Script URL — ข้ามขั้นตอนอัปโหลด Drive', 'warn');
+    }
+    if (!uploaded) {
+      log('ℹ อัปโหลด Drive ไม่สำเร็จ — ดาวน์โหลดไฟล์ลงเครื่องแทน', 'warn');
+      saveAs(origBlob, `สัญญาแฟรนไชส์โดมิชา_${d.branchNo}_ต้นฉบับ.docx`);
+      saveAs(copyBlob, `สัญญาแฟรนไชส์โดมิชา_${d.branchNo}_คู่ฉบับ.docx`);
     }
   } catch(e) {
     log('✗ เกิดข้อผิดพลาด: ' + e.message, 'err');
@@ -1289,8 +1289,10 @@ async function generateOne(label, color, d, standalone = true) {
   log(`  💧 กำลังใส่ลายน้ำ "${label}"…`);
   const final = await addWatermark(blob, label, color);
   const fname = `สัญญาแฟรนไชส์โดมิชา_${d.branchNo}_${label}.docx`;
-  saveAs(final, fname);
-  log(`  ✓ ดาวน์โหลด: ${fname}`, 'ok');
+  if (standalone) {
+    saveAs(final, fname);
+    log(`  ✓ ดาวน์โหลด: ${fname}`, 'ok');
+  }
   return final; // คืน blob สำหรับ upload Drive
 }
 
@@ -1349,12 +1351,15 @@ async function uploadToDrive(origBlob, copyBlob, d, url) {
       linkLine.innerHTML = `📁 <strong>Drive Folder สาขา ${d.branchNo}:</strong> <a href="${fd.folderUrl}" target="_blank" style="color:#1a73e8;">${fd.folderUrl}</a>`;
       document.getElementById('log').appendChild(linkLine);
       document.getElementById('log').scrollTop = 9999;
+      return true;
     } else {
       log(`  ✗ Apps Script แจ้งข้อผิดพลาด: ${result.error}`, 'err');
+      return false;
     }
   } catch(err) {
     log(`  ✗ ไม่สามารถเชื่อมต่อ Apps Script ได้: ${err.message}`, 'err');
     log(`  ℹ ตรวจสอบ URL และ Deployment settings (Execute as: Me | Access: Anyone)`, 'warn');
+    return false;
   }
 }
 
@@ -1502,7 +1507,6 @@ async function buildDocx(d) {
               children:[
                 r(`บริษัท โดมิพลัสกรุ๊ป จำกัด  |  สัญญาแฟรนไชส์โดมิชา  |  เลขสาขา: ${F.BranchNo}`,
                   {size:22,color:BLUE}),
-                new TextRun({ children:["\t", PageNumber.CURRENT], font:FONT, size:22, color:BLUE }),
               ]
             })
           ]
@@ -1519,7 +1523,8 @@ async function buildDocx(d) {
               border:{top:{style:BorderStyle.SINGLE,size:4,color:LG,space:4}},
               children:[r("77/44 หมู่บ้านแกรนดิตี้เบย์อ่างศิลา ตำบลเสม็ด อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000",
                 {size:SS,color:GR})]
-            })
+            }),
+            new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { before: 40, after: 0 }, children: [r('หน้า ', { size: SS, color: GR }), new TextRun({ children: [PageNumber.CURRENT, ' / ', PageNumber.TOTAL_PAGES], font: FONT, size: SS, color: GR })] })
           ]
         })
       },
@@ -2119,7 +2124,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   opts = opts || {};
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
-    AlignmentType, BorderStyle, WidthType, VerticalAlign
+    AlignmentType, BorderStyle, WidthType, VerticalAlign, Footer, PageNumber
   } = window.docx;
 
   let logoData = null;
@@ -2294,6 +2299,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
     styles: { default: { document: { run: { font: FONT, size: BS, language: { value: 'th-TH', bidirectional: 'th-TH' } } } } },
     sections: [{
       properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 851, bottom: 851, left: 1134, right: 1134 } } },
+      footers: ONE ? undefined : { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'หน้า ', font: FONT, size: SS, color: GR }), new TextRun({ children: [PageNumber.CURRENT, ' / ', PageNumber.TOTAL_PAGES], font: FONT, size: SS, color: GR })] })] }) },
       children,
     }],
   });
