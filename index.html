@@ -11,27 +11,28 @@
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
     :root {
-      --navy:   #8B3A0A;   /* deep brown-orange (replaces navy) */
-      --blue:   #E8650A;   /* DomiCha orange (replaces blue) */
-      --teal:   #C45508;   /* darker orange accent */
-      --gold:   #F5A623;   /* amber highlight */
-      --light:  #FDEBD0;   /* cream/peach light */
-      --bg:     #FFF8F0;   /* warm cream background */
+      --navy:   #a63d17;   /* DomiCha dark red-orange */
+      --blue:   #f0692f;   /* DomiCha primary orange */
+      --teal:   #c45508;   /* darker accent */
+      --gold:   #ffd5a4;   /* peach/gold accent */
+      --light:  #feebc8;   /* DomiCha cream */
+      --bg:     #fff5e4;   /* DomiCha soft background */
       --card:   #FFFFFF;
-      --text:   #3D1F06;   /* dark brown text */
-      --muted:  #9B6A44;   /* muted brown */
+      --text:   #382115;   /* DomiCha ink */
+      --muted:  #79583e;   /* DomiCha muted */
+      --line:   #e4c89e;   /* DomiCha line/border */
       --red:    #cc2200;
       --dblue:  #1155bb;
       --radius: 12px;
-      --shadow: 0 4px 20px rgba(140,60,10,.10);
+      --shadow: 0 4px 20px rgba(166,61,23,.12);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Sarabun', sans-serif;
+      font-family: 'Noto Sans Thai', 'DM Sans', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -39,7 +40,7 @@
 
     /* ── App header ──────────────────────────────────────────────────── */
     .app-header {
-      background: linear-gradient(135deg, #8B3A0A 0%, #E8650A 60%, #F5A623 100%);
+      background: linear-gradient(135deg, #a63d17 0%, #f0692f 60%, #ffd5a4 100%);
       color: white;
       padding: 16px 32px;
       display: flex;
@@ -99,6 +100,7 @@
       background: var(--card);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
+      border: 1px solid var(--line);
       overflow: hidden;
     }
     .card-header {
@@ -143,8 +145,8 @@
     }
     .field input:focus, .field textarea:focus, .field select:focus {
       outline: none;
-      border-color: #E8650A;
-      box-shadow: 0 0 0 3px rgba(232,101,10,.14);
+      border-color: #f0692f;
+      box-shadow: 0 0 0 3px rgba(240,105,47,.16);
       background: white;
     }
     .field input.highlight { border-color: var(--gold); background: #FFFBF0; }
@@ -268,8 +270,8 @@
     }
     #appsScriptUrl:focus {
       outline: none;
-      border-color: #E8650A;
-      box-shadow: 0 0 0 3px rgba(232,101,10,.14);
+      border-color: #f0692f;
+      box-shadow: 0 0 0 3px rgba(240,105,47,.16);
     }
 
     /* ── Branch Management UI ───────────────────────────────────────── */
@@ -370,6 +372,11 @@
 </head>
 <body>
 
+<!-- ══ Top Bar (DomiCha style) ═══════════════════════════════════════════════ -->
+<div style="background:#f0692f;color:#fff;text-align:center;padding:7px 16px;font-size:13px;font-weight:600;letter-spacing:.5px;">
+  DOMICHA · FRANCHISE SYSTEM &nbsp;✦&nbsp; ระบบจัดการสัญญาแฟรนไชส์ · บริษัท โดมิพลัสกรุ๊ป จำกัด
+</div>
+
 <!-- ══ App Header ══════════════════════════════════════════════════════════ -->
 <div class="app-header">
   <div class="logo">
@@ -379,7 +386,6 @@
     <h1>ระบบสร้างสัญญาแฟรนไชส์โดมิชา</h1>
     <p>DomiCha Franchise Contract Generator — บริษัท โดมิพลัสกรุ๊ป จำกัด</p>
   </div>
-  <span class="badge">v2.0 · 2567</span>
 </div>
 
 <!-- ══ Main layout ══════════════════════════════════════════════════════════ -->
