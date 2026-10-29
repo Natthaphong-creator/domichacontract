@@ -354,6 +354,9 @@
       background: #FFFBF7; color: var(--text);
     }
     .cancel-field textarea { height: 70px; resize: vertical; }
+    .cancel-checks label { display: block; font-size: 13px; font-weight: 400; color: var(--text);
+      margin: 0 0 4px; letter-spacing: 0; cursor: pointer; }
+    .cancel-checks input { width: auto; margin-right: 6px; vertical-align: middle; }
     .cancel-field input:focus, .cancel-field textarea:focus {
       outline: none; border-color: #E8650A;
       box-shadow: 0 0 0 3px rgba(232,101,10,.14);
@@ -593,6 +596,36 @@
             <div class="cancel-field">
               <label>เหตุผลการยกเลิก</label>
               <textarea id="cancelReason" placeholder="ระบุเหตุผลการยกเลิก…"></textarea>
+            </div>
+
+            <!-- ตัวเลือกตามประเภทการยกเลิก -->
+            <div id="cancelOptFr" style="display:none">
+              <div class="cancel-field">
+                <label>เหตุผล (ติ๊กได้หลายข้อ)</label>
+                <div class="cancel-checks">
+                  <label><input type="checkbox" class="cfr" value="ผลประกอบการไม่เป็นไปตามที่คาดไว้"> ผลประกอบการไม่เป็นไปตามที่คาดไว้</label>
+                  <label><input type="checkbox" class="cfr" value="ปัญหาเรื่องทำเลหรือสถานที่ประกอบการ"> ปัญหาเรื่องทำเลหรือสถานที่ประกอบการ</label>
+                  <label><input type="checkbox" class="cfr" value="ปัญหาส่วนตัว / สุขภาพ / ครอบครัว"> ปัญหาส่วนตัว / สุขภาพ / ครอบครัว</label>
+                  <label><input type="checkbox" class="cfr" value="ไม่สามารถดำเนินกิจการต่อได้"> ไม่สามารถดำเนินกิจการต่อได้</label>
+                </div>
+              </div>
+            </div>
+            <div id="cancelOptFo" style="display:none">
+              <div class="cancel-field">
+                <label>เหตุผิดสัญญา (ติ๊กได้หลายข้อ)</label>
+                <div class="cancel-checks">
+                  <label><input type="checkbox" class="cfo" value="1"> (1) ไม่ชำระหรือปฏิเสธที่จะจ่ายเงินตามสัญญา</label>
+                  <label><input type="checkbox" class="cfo" value="2"> (2) ไม่จัดให้มีการจำหน่ายสินค้า (บริการ) โดมิชา</label>
+                  <label><input type="checkbox" class="cfo" value="3"> (3) ถูกฟ้อง / ศาลพิพากษาให้ล้มละลาย</label>
+                  <label><input type="checkbox" class="cfo" value="4"> (4) ละเมิดสัญญาข้ออื่น</label>
+                  <label><input type="checkbox" class="cfo" value="5"> (5) ไม่เปิดกิจการ / ไม่สั่งวัตถุดิบบังคับซื้อ ≥ 2 เดือน</label>
+                  <label><input type="checkbox" class="cfo" value="6"> (6) ใช้แก้วหรือชาอื่นที่ไม่ใช่ของ DomiCha (ปิดร้าน+ถอดป้าย 7 วัน)</label>
+                </div>
+              </div>
+              <div class="cancel-field"><label>เลขที่หนังสือ</label><input type="text" id="cancelLetterNo" placeholder="เช่น DMC-2569/001"></div>
+              <div class="cancel-field"><label>วันที่ตักเตือนครั้งที่ 1</label><input type="text" id="cancelWarnDate" placeholder="เช่น 1 มกราคม 2569"></div>
+              <div class="cancel-field"><label>วันที่แจ้งปรับ (ครั้งที่ 2)</label><input type="text" id="cancelFineDate" placeholder="เช่น 15 มกราคม 2569"></div>
+              <div class="cancel-field"><label>จำนวนรายการที่ปรับ (รายการละ 5,000 บาท)</label><input type="number" id="cancelFineItems" min="0" placeholder="เช่น 2"></div>
             </div>
 
             <div class="btn-row" style="gap:8px;margin-top:4px;">
@@ -1917,6 +1950,10 @@ function renderBranchInfo(d) {
   document.getElementById('ctBtnFo').className = 'cancel-type-btn';
   document.getElementById('cancelDate').value   = '';
   document.getElementById('cancelReason').value = '';
+  document.getElementById('cancelOptFr').style.display = 'none';
+  document.getElementById('cancelOptFo').style.display = 'none';
+  document.querySelectorAll('.cancel-checks input').forEach(e => { e.checked = false; });
+  ['cancelLetterNo','cancelWarnDate','cancelFineDate','cancelFineItems'].forEach(id => { document.getElementById(id).value = ''; });
 }
 
 function selectCancelType(type) {
@@ -1925,6 +1962,21 @@ function selectCancelType(type) {
     (type === 'BY_FRANCHISEE' ? ' active-franchisee' : '');
   document.getElementById('ctBtnFo').className = 'cancel-type-btn' +
     (type === 'BY_FRANCHISOR' ? ' active-franchisor' : '');
+  document.getElementById('cancelOptFr').style.display = type === 'BY_FRANCHISEE' ? '' : 'none';
+  document.getElementById('cancelOptFo').style.display = type === 'BY_FRANCHISOR' ? '' : 'none';
+}
+
+function getCancelOptions() {
+  const v   = id => (document.getElementById(id)?.value || '').trim();
+  const sel = cls => Array.from(document.querySelectorAll('input.' + cls + ':checked')).map(e => e.value);
+  return {
+    reasons:   sel('cfr'),
+    breaches:  sel('cfo'),
+    letterNo:  v('cancelLetterNo'),
+    warnDate:  v('cancelWarnDate'),
+    fineDate:  v('cancelFineDate'),
+    fineItems: v('cancelFineItems'),
+  };
 }
 
 async function quickStatus(status) {
@@ -1964,7 +2016,8 @@ async function generateCancelDoc() {
   try {
     const cancelBlob = await buildCancelDocx(_currentBranch, _cancelType,
       document.getElementById('cancelDate').value.trim(),
-      document.getElementById('cancelReason').value.trim());
+      document.getElementById('cancelReason').value.trim(),
+      getCancelOptions());
     const suffix = _cancelType === 'BY_FRANCHISEE' ? 'แฟรนไชส์ซียกเลิก' : 'แฟรนไชส์ซอร์ยกเลิก';
     const fname  = `สัญญายกเลิก_${_currentBranch.branchNo}_${suffix}.docx`;
     saveAs(cancelBlob, fname);
@@ -1992,7 +2045,7 @@ async function confirmCancelBranch() {
 
     // 1. สร้าง DOCX
     log('  📄 สร้างสัญญายกเลิก DOCX…');
-    const cancelBlob = await buildCancelDocx(_currentBranch, _cancelType, cancelDate, cancelReason);
+    const cancelBlob = await buildCancelDocx(_currentBranch, _cancelType, cancelDate, cancelReason, getCancelOptions());
     const suffix = _cancelType === 'BY_FRANCHISEE' ? 'แฟรนไชส์ซียกเลิก' : 'แฟรนไชส์ซอร์ยกเลิก';
     const fname  = `สัญญายกเลิก_${_currentBranch.branchNo}_${suffix}.docx`;
     saveAs(cancelBlob, fname); // ดาวน์โหลดด้วย
@@ -2050,181 +2103,187 @@ function validateCancelForm() {
 // CANCELLATION DOCX BUILDER
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason) {
+async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opts) {
+  opts = opts || {};
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     AlignmentType, BorderStyle, WidthType, VerticalAlign
   } = window.docx;
 
   const FONT = "TH SarabunPSK";
-  const BS=32, HS=36, TS=48, SS=26, LS=360;
-  const NAVY='1A3A5C', BLUE='2E6DA4', RED='8B0000', GR='666666', BC='222222';
-  const NO_B = { style: BorderStyle.NONE, size:0, color:'FFFFFF' };
-  const NB   = { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B };
+  const BS = 32, SS = 26, HS = 36, TS = 44;
+  const NAVY = '1A3A5C', RED = '8B0000', GR = '666666', BC = '222222';
+  const NB = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const noBorders = { top: NB, bottom: NB, left: NB, right: NB };
+  const DOT = '........................';
 
-  const r = (text, o={}) => new TextRun({
-    text, font: FONT,
-    size:   o.size   ?? BS,
-    bold:   o.bold   ?? false,
-    color:  o.color  ?? BC,
-    italics: o.italic ?? false,
+  const t = (text, o = {}) => new TextRun({
+    text: String(text), font: FONT, size: o.size ?? BS, bold: o.bold, italics: o.italic, color: o.color ?? BC,
   });
-
-  const para = (children, opts={}) => new Paragraph({
-    spacing: { line: LS, lineRule:'auto', before: opts.before ?? 0, after: opts.after ?? 0 },
-    alignment: opts.align ?? AlignmentType.LEFT,
-    children: Array.isArray(children) ? children : [children],
-    ...opts.extra
+  const chk = (on) => new TextRun({ text: on ? '☑ ' : '☐ ', font: 'Segoe UI Symbol', size: BS, color: BC });
+  const p = (runs, o = {}) => new Paragraph({
+    alignment: o.align ?? AlignmentType.THAI_DISTRIBUTE,
+    spacing: { line: 320, before: o.before ?? 0, after: o.after ?? 60 },
+    indent: o.indent, keepNext: o.keepNext,
+    children: Array.isArray(runs) ? runs : [runs],
   });
+  const left   = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.LEFT });
+  const center = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.CENTER });
+  const h      = (text) => p([t(text, { bold: true, color: NAVY })], { before: 140, align: AlignmentType.LEFT, keepNext: true });
+  const item   = (num, runs) => p([t(num + '  '), ...runs], { indent: { left: 540, hanging: 400 } });
+  const check  = (on, runs) => p([chk(on), ...runs], { indent: { left: 540, hanging: 340 }, align: AlignmentType.LEFT });
+  const body   = (runs) => p(runs, { indent: { firstLine: 720 } });
+  const rule   = () => new Paragraph({ spacing: { before: 0, after: 100 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: NAVY, space: 2 } }, children: [new TextRun('')] });
 
-  const spacer = (pt=120) => para([new TextRun({text:''})], { before:pt });
-
-  const hr = () => new Paragraph({
-    spacing: { before:80, after:80 },
-    border: { bottom:{ style:BorderStyle.SINGLE, size:6, color:NAVY, space:2 }},
-    children: [new TextRun('')]
+  const W = 4500, GAP = 360;
+  const sigCell = (lines, w = W) => new TableCell({
+    width: { size: w, type: WidthType.DXA }, borders: noBorders, verticalAlign: VerticalAlign.TOP, children: lines });
+  const sigLines = (name, role, note) => [
+    center([t('ลงชื่อ ..................................................')], { before: 240 }),
+    center([t('(' + name + ')')]),
+    center([t(role, { size: SS, color: GR })]),
+    ...(note ? [center([t(note, { size: SS, color: GR })])] : []),
+    center([t('วันที่ ........../........../..........', { size: SS, color: GR })]),
+  ];
+  const sigTable = (l, r) => new Table({
+    width: { size: W * 2 + GAP, type: WidthType.DXA }, columnWidths: [W, GAP, W],
+    borders: { ...noBorders, insideHorizontal: NB, insideVertical: NB },
+    rows: [new TableRow({ cantSplit: true, children: [sigCell(l), sigCell([p([t('')])], GAP), sigCell(r)] })],
   });
+  const witnessTable = () => sigTable(
+    [center([t('ลงชื่อ ..................................................')], { before: 200 }),
+     center([t('(..................................................)')]),
+     center([t('พยาน', { size: SS, color: GR })])],
+    [center([t('ลงชื่อ ..................................................')], { before: 200 }),
+     center([t('(..................................................)')]),
+     center([t('พยาน', { size: SS, color: GR })])]);
 
-  const cell = (children, opts={}) => new TableCell({
-    children: Array.isArray(children) ? children : [children],
-    borders: NB,
-    width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
-    verticalAlign: VerticalAlign.CENTER,
-    shading: opts.shading ? { fill: opts.shading } : undefined,
-  });
-
-  // ── Determine document type ──────────────────────────────────────
-  const isByFranchisee = cancelType === 'BY_FRANCHISEE';
-  const docTitle = isByFranchisee
-    ? 'หนังสือแจ้งความประสงค์ขอยกเลิกสัญญาแฟรนไชส์'
-    : 'หนังสือบอกเลิกสัญญาแฟรนไชส์';
-
-  const cancelTypeLabel = isByFranchisee
-    ? 'ผู้รับสิทธิ์แฟรนไชส์ (แฟรนไชส์ซี) แจ้งยกเลิก'
-    : 'ผู้ให้สิทธิ์แฟรนไชส์ (แฟรนไชส์ซอร์) เป็นผู้ยกเลิก';
-
-  const party1Label  = isByFranchisee ? 'ผู้แจ้งยกเลิก (แฟรนไชส์ซี)'  : 'ผู้บอกเลิกสัญญา (แฟรนไชส์ซอร์)';
-  const party1Name   = isByFranchisee ? branch.customerName : 'บริษัท โดมิพลัสกรุ๊ป จำกัด';
-  const party2Label  = isByFranchisee ? 'ผู้รับแจ้ง (แฟรนไชส์ซอร์)'   : 'ผู้รับการบอกเลิก (แฟรนไชส์ซี)';
-  const party2Name   = isByFranchisee ? 'บริษัท โดมิพลัสกรุ๊ป จำกัด' : branch.customerName;
-
-  const mainBody = isByFranchisee
-    ? `ข้าพเจ้า ${branch.customerName} ผู้รับสิทธิ์แฟรนไชส์ DomiCha สาขา ${branch.branchName} (เลขสาขา ${branch.branchNo}) ขอแจ้งความประสงค์ยกเลิกสัญญาแฟรนไชส์ ฉบับลงวันที่ตามที่ระบุในสัญญา กับบริษัท โดมิพลัสกรุ๊ป จำกัด โดยมีผลในวันที่ ${cancelDate || '......................'}`
-    : `บริษัท โดมิพลัสกรุ๊ป จำกัด ในฐานะผู้ให้สิทธิ์แฟรนไชส์ DomiCha ขอแจ้งบอกเลิกสัญญาแฟรนไชส์ กับ ${branch.customerName} ผู้รับสิทธิ์แฟรนไชส์ สาขา ${branch.branchName} (เลขสาขา ${branch.branchNo}) โดยมีผลในวันที่ ${cancelDate || '......................'}`;
-
-  const afterCancel = isByFranchisee
-    ? 'ข้าพเจ้าตกลงที่จะปฏิบัติตามข้อกำหนดและเงื่อนไขการยกเลิกสัญญาทุกประการ ตามที่บริษัทฯ กำหนด รวมถึงการคืนอุปกรณ์ ป้ายสาขา และข้อมูลลับทุกประเภทที่ได้รับจากบริษัทฯ'
-    : 'บริษัทฯ จะดำเนินการตามขั้นตอนการยกเลิกสัญญา และขอให้แฟรนไชส์ซีปฏิบัติตามข้อกำหนดการยกเลิก ได้แก่ การคืนอุปกรณ์ ป้ายสาขา และการชำระหนี้ค้างชำระทั้งหมด (หากมี) ภายใน 30 วัน นับจากวันที่ระบุข้างต้น';
-
-  // ── Signature table ──────────────────────────────────────────────
-  const sigBlock = (label, name) => [
-    para([r('ลงชื่อ ..............................................', {size:BS})]),
-    para([r(`       (${name})`, {size:BS})]),
-    para([r(`${label}`, {size:SS, color:GR})]),
-    para([r('วันที่ ........../........../..........', {size:SS, color:GR})]),
+  const header = (docTitle, sub) => [
+    center([t('บริษัท โดมิพลัสกรุ๊ป จำกัด', { size: TS, bold: true, color: NAVY })], { after: 0 }),
+    center([t('DomiCha Franchise System', { size: SS, color: GR })], { after: 60 }),
+    rule(),
+    center([t(docTitle, { size: HS, bold: true, color: RED })], { after: 0 }),
+    center([t(sub, { size: SS, color: GR })], { after: 120 }),
   ];
 
-  const sigTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B, insideH:NO_B, insideV:NO_B },
-    rows: [new TableRow({ children: [
-      cell(sigBlock(party1Label, party1Name), { width: 4500 }),
-      cell([para([r('', {size:BS})])], { width: 700 }),
-      cell(sigBlock(party2Label, party2Name), { width: 4500 }),
-    ]})],
-  });
+  const today = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+  const name  = branch.customerName || DOT;
+  const bName = branch.branchName || DOT;
+  const bNo   = branch.branchNo || DOT;
+  const addr  = branch.address || DOT;
+  const cDate = branch.contractDate || DOT;
+  const eff   = cancelDate || DOT;
+  const isByFranchisee = cancelType === 'BY_FRANCHISEE';
 
-  const witnessTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B, insideH:NO_B, insideV:NO_B },
-    rows: [new TableRow({ children: [
-      cell([
-        para([r('พยาน ..............................................', {size:BS})]),
-        para([r('       (............................................)', {size:BS})]),
-        para([r('พยานฝ่ายที่ 1', {size:SS, color:GR})]),
-      ], { width: 4500 }),
-      cell([para([r('', {size:BS})])], { width: 700 }),
-      cell([
-        para([r('พยาน ..............................................', {size:BS})]),
-        para([r('       (............................................)', {size:BS})]),
-        para([r('พยานฝ่ายที่ 2', {size:SS, color:GR})]),
-      ], { width: 4500 }),
-    ]})],
-  });
+  let children = [];
 
-  // ── Build document ────────────────────────────────────────────────
+  if (isByFranchisee) {
+    // ═══ แบบที่ 1: แฟรนไชส์ซีขอยกเลิกเอง ═══
+    const picked = opts.reasons || [];
+    const std = [
+      'ผลประกอบการไม่เป็นไปตามที่คาดไว้',
+      'ปัญหาเรื่องทำเลหรือสถานที่ประกอบการ',
+      'ปัญหาส่วนตัว / สุขภาพ / ครอบครัว',
+      'ไม่สามารถดำเนินกิจการต่อได้',
+    ];
+    children = [
+      ...header('หนังสือแจ้งความประสงค์ขอยกเลิกสัญญาแฟรนไชส์', '(แฟรนไชส์ซีเป็นผู้ขอยกเลิกเอง)'),
+      left([t('เขียนที่  ' + DOT)]),
+      left([t('วันที่  ' + today)], { after: 100 }),
+      left([t('เรื่อง  ', { bold: true }), t('ขอยกเลิกสัญญาแฟรนไชส์ DomiCha')]),
+      left([t('เรียน  ', { bold: true }), t('บริษัท โดมิพลัสกรุ๊ป จำกัด')]),
+      left([t('อ้างถึง  ', { bold: true }), t(`สัญญาแฟรนไชส์ DomiCha ฉบับลงวันที่ ${cDate} สาขา ${bName} (เลขสาขา ${bNo})`)], { after: 120 }),
+
+      body([t(`ตามที่ข้าพเจ้า ${name} ที่อยู่ ${addr} ในฐานะผู้รับสิทธิ์แฟรนไชส์ (“แฟรนไชส์ซี”) ได้ทำสัญญาแฟรนไชส์ DomiCha กับบริษัท โดมิพลัสกรุ๊ป จำกัด (“แฟรนไชส์ซอร์”) ตามสัญญาที่อ้างถึงข้างต้น นั้น`)]),
+      body([t(`ข้าพเจ้ามีความประสงค์ขอยกเลิกสัญญาดังกล่าว และขอแจ้งให้ทราบล่วงหน้าตามข้อ 7.1 แห่งสัญญา (ไม่น้อยกว่า 7 วัน) โดยให้การยกเลิกสัญญามีผลตั้งแต่วันที่ ${eff} เป็นต้นไป`)]),
+
+      h('เหตุผลในการขอยกเลิก'),
+      ...std.map(s => check(picked.includes(s), [t(s)])),
+      check(!!cancelReason, [t('อื่น ๆ  ' + (cancelReason || DOT))]),
+
+      h('ข้อปฏิบัติภายหลังการยกเลิก (ตามข้อ 7.4 แห่งสัญญา)'),
+      item('1.', [t('ข้าพเจ้าจะหยุดประกอบการร้านแฟรนไชส์ DomiCha และเลิกใช้เครื่องหมายการค้า DomiCha ตั้งแต่วันที่การยกเลิกมีผล')]),
+      item('2.', [t('ข้าพเจ้าจะถอดป้ายสาขา สื่อโฆษณา และส่งคืนอุปกรณ์ คู่มือ และข้อมูลลับทุกประเภทที่ได้รับจากบริษัทฯ ภายใน 30 วัน นับจากวันที่การยกเลิกมีผล')]),
+      item('3.', [t('ข้าพเจ้าจะไม่นำวัตถุดิบหรือข้อมูลลับของแบรนด์ไปใช้หรือจำหน่ายต่อโดยไม่ได้รับอนุญาต')]),
+      item('4.', [t('ข้าพเจ้าจะชำระยอดค้างชำระทั้งหมดที่มีต่อบริษัทฯ (ถ้ามี) จำนวน .................. บาท ภายใน 30 วัน นับจากวันที่การยกเลิกมีผล')]),
+
+      h('เรื่องค่าธรรมเนียมแฟรนไชส์ที่ชำระแล้ว'),
+      check(false, [t('ข้าพเจ้ารับทราบและไม่เรียกคืนค่าธรรมเนียมแฟรนไชส์ที่ได้ชำระไปแล้ว')]),
+      check(false, [t('เป็นไปตามข้อตกลงเพิ่มเติมที่ทำไว้เป็นลายลักษณ์อักษร ลงวันที่ ' + DOT)]),
+
+      body([t('จึงเรียนมาเพื่อโปรดทราบและดำเนินการต่อไป')]),
+      p([t('')], { after: 60 }),
+      sigTable(
+        sigLines(name, 'ผู้แจ้งยกเลิก (แฟรนไชส์ซี)'),
+        sigLines('กรรมการผู้มีอำนาจ / ผู้รับมอบอำนาจ', 'ผู้รับทราบ (บริษัท โดมิพลัสกรุ๊ป จำกัด)')),
+      p([t('')], { after: 40 }),
+      witnessTable(),
+    ];
+  } else {
+    // ═══ แบบที่ 2: บริษัทบอกเลิก เพราะแฟรนไชส์ซีผิดสัญญา ═══
+    const b = opts.breaches || [];
+    const on = (k) => b.includes(String(k));
+    const n = parseInt(opts.fineItems, 10) || 0;
+    const fineTxt = n > 0
+      ? `เป็นเงิน 5,000 บาท ต่อรายการ จำนวน ${n} รายการ รวม ${(n * 5000).toLocaleString('en-US')} บาท`
+      : 'เป็นเงิน 5,000 บาท ต่อรายการ จำนวน ........ รายการ รวม ................ บาท';
+    children = [
+      ...header('หนังสือบอกเลิกสัญญาแฟรนไชส์', '(บริษัทเป็นผู้บอกเลิก เนื่องจากแฟรนไชส์ซีผิดสัญญา)'),
+      left([t('ที่  ' + (opts.letterNo || DOT))]),
+      left([t('วันที่  ' + today)], { after: 100 }),
+      left([t('เรื่อง  ', { bold: true }), t('บอกเลิกสัญญาแฟรนไชส์ DomiCha เนื่องจากผิดสัญญา')]),
+      left([t('เรียน  ', { bold: true }), t(`${name}  ที่อยู่ ${addr}`)]),
+      left([t('อ้างถึง  ', { bold: true }), t(`1) สัญญาแฟรนไชส์ DomiCha ฉบับลงวันที่ ${cDate} สาขา ${bName} (เลขสาขา ${bNo})`)]),
+      left([t('                 2) หนังสือตักเตือนฉบับลงวันที่ ' + (opts.warnDate || DOT))], { after: 120 }),
+
+      body([t(`ตามสัญญาแฟรนไชส์ที่อ้างถึง บริษัท โดมิพลัสกรุ๊ป จำกัด (“แฟรนไชส์ซอร์”) ได้ให้สิทธิ์แก่ ${name} (“แฟรนไชส์ซี”) ประกอบกิจการร้าน DomiCha สาขา ${bName} นั้น บัดนี้ปรากฏว่าแฟรนไชส์ซีมีการผิดสัญญาตามข้อ 7.2 แห่งสัญญา ดังนี้`)]),
+
+      h('1.  เหตุแห่งการผิดสัญญา (ตามข้อ 7.2)'),
+      check(on(1), [t('(1) ไม่ชำระหรือปฏิเสธที่จะจ่ายเงินตามที่ระบุในสัญญา')]),
+      check(on(2), [t('(2) ไม่จัดให้มีการจำหน่ายสินค้า (บริการ) โดมิชา (DomiCha) ตามที่กำหนดในสัญญา')]),
+      check(on(3), [t('(3) ถูกฟ้องเกี่ยวกับการดำเนินการ หรือศาลพิพากษาให้ล้มละลาย')]),
+      check(on(4), [t('(4) ละเมิดสัญญา ณ ข้ออื่นของสัญญา')]),
+      check(on(5), [t('(5) ไม่เปิดกิจการ หรือไม่สั่งซื้อวัตถุดิบบังคับซื้อจากแฟรนไชส์ซอร์ เป็นระยะเวลาตั้งแต่ 2 เดือนขึ้นไป โดยไม่มีเหตุอันสมควร')]),
+      check(on(6), [t('(6) ใช้แก้วหรือชาอื่นที่ไม่ใช่ของ DomiCha แทนวัตถุดิบบังคับซื้อ (แก้วสกรีนโดมิชา ชาแดง ชาไต้หวัน ชามะลิ ชาเขียว ม้วนซีล) อันเป็นการละเมิดข้อ 5.4 (1) แห่งสัญญา')]),
+      p([t('รายละเอียดข้อเท็จจริง:  ', { bold: true }), t(cancelReason || DOT)], { before: 60, align: AlignmentType.LEFT }),
+
+      h('2.  การตักเตือนและค่าปรับ (ตามข้อ 7.5)'),
+      item('2.1', [t('ครั้งที่ 1  แฟรนไชส์ซอร์ได้ออกเอกสารตักเตือนเพื่อแจ้งเหตุผิดสัญญา เมื่อวันที่ ' + (opts.warnDate || DOT))]),
+      item('2.2', [t(`ครั้งที่ 2  แฟรนไชส์ซีผิดสัญญาซ้ำหรือไม่แก้ไข แฟรนไชส์ซอร์จึงแจ้งปรับ เมื่อวันที่ ${opts.fineDate || DOT} ${fineTxt}`)]),
+      item('2.3', [t('ครั้งที่ 3  แฟรนไชส์ซียังคงผิดสัญญาอีก แฟรนไชส์ซอร์จึงบอกเลิกสัญญาตามหนังสือฉบับนี้ (ตามข้อ 7.5 แห่งสัญญา)')]),
+
+      h('3.  การบอกเลิกสัญญา (ตามข้อ 7.1 และข้อ 7.3)'),
+      body([t(`แฟรนไชส์ซอร์ขอใช้สิทธิ์บอกเลิกสัญญาแฟรนไชส์ดังกล่าว โดยให้การบอกเลิกมีผลตั้งแต่วันที่ ${eff} (ซึ่งไม่น้อยกว่า 7 วัน นับแต่วันที่แฟรนไชส์ซีได้รับหนังสือฉบับนี้)`)]),
+
+      h('4.  ผลของการเลิกสัญญา (ตามข้อ 7.4) — ขอให้แฟรนไชส์ซีดำเนินการ'),
+      item('4.1', [t('หยุดประกอบการร้านแฟรนไชส์ DomiCha และเลิกใช้เครื่องหมายการค้าทันทีนับแต่วันที่การบอกเลิกมีผล')]),
+      ...(on(6) ? [p([t('กรณีผิดสัญญาตามข้อ 1 (6) (ใช้แก้วหรือชาอื่นที่ไม่ใช่ของ DomiCha)  ', { bold: true }),
+        t('แฟรนไชส์ซีต้องปิดร้านและถอดป้ายสาขาภายใน 7 วัน นับแต่วันที่ได้รับเอกสารฉบับนี้', { bold: true, color: RED }),
+        t(' และไม่ใช้เครื่องหมายการค้า DomiCha อีกต่อไป')], { indent: { left: 540 }, align: AlignmentType.LEFT })] : []),
+      item('4.2', [t('ถอดป้ายสาขา และส่งคืนอุปกรณ์ คู่มือ และข้อมูลลับทุกประเภทที่ได้รับจากแฟรนไชส์ซอร์ ภายใน 30 วัน นับจากวันที่การบอกเลิกมีผล')]),
+      item('4.3', [t('ชำระหนี้ค้างชำระทั้งหมด (ถ้ามี) รวมถึงค่าปรับตามข้อ 2 ภายใน 30 วัน นับจากวันที่การบอกเลิกมีผล')]),
+
+      h('5.  การสงวนสิทธิ์'),
+      body([t('แฟรนไชส์ซอร์ขอสงวนสิทธิ์ในการเรียกร้องค่าเสียหายเพิ่มเติมและดำเนินการตามกฎหมายต่อไป หากแฟรนไชส์ซีไม่ปฏิบัติตามหนังสือฉบับนี้ โดยข้อพิพาทให้เป็นไปตามข้อ 9 แห่งสัญญา และหนังสือฉบับนี้ได้ส่งไปยังภูมิลำเนาของแฟรนไชส์ซีที่ระบุไว้ในสัญญา ให้ถือว่าแฟรนไชส์ซีได้รับแล้วโดยชอบตามข้อ 8')]),
+
+      body([t('จึงเรียนมาเพื่อทราบและปฏิบัติตามต่อไป')]),
+      p([t('')], { after: 60 }),
+      sigTable(
+        sigLines('กรรมการผู้มีอำนาจ ............................', 'ผู้บอกเลิกสัญญา (บริษัท โดมิพลัสกรุ๊ป จำกัด)'),
+        sigLines(name, 'ผู้รับหนังสือ (ลงชื่อรับทราบ)', '(กรณีรับหนังสือด้วยตนเอง)')),
+      p([t('')], { after: 40 }),
+      witnessTable(),
+    ];
+  }
+
   const doc = new Document({
+    styles: { default: { document: { run: { font: FONT, size: BS } } } },
     sections: [{
-      properties: {
-        page: { margin: { top:1440, bottom:1440, left:1701, right:1440 } }
-      },
-      children: [
-
-        // Title block
-        para([r('บริษัท โดมิพลัสกรุ๊ป จำกัด', {size:TS, bold:true, color:NAVY})], { align: AlignmentType.CENTER }),
-        para([r('DomiCha Franchise System', {size:32, color:GR})], { align: AlignmentType.CENTER }),
-        spacer(60),
-        hr(),
-        spacer(60),
-
-        // Document title
-        para([r(docTitle, {size:HS, bold:true, color:RED})], { align: AlignmentType.CENTER }),
-        para([r(`(${cancelTypeLabel})`, {size:SS, color:GR})], { align: AlignmentType.CENTER }),
-        spacer(120),
-
-        // Branch info
-        para([r('ข้อมูลสาขา', {size:HS, bold:true, color:NAVY})], { before:80 }),
-        hr(),
-        para([r(`เลขสาขา: `, {size:BS, bold:true}), r(branch.branchNo, {size:BS})]),
-        para([r(`ชื่อสาขา: `, {size:BS, bold:true}), r(branch.branchName || '-', {size:BS})]),
-        para([r(`จังหวัด: `, {size:BS, bold:true}), r(branch.province || '-', {size:BS})]),
-        para([r(`แฟรนไชส์ซี: `, {size:BS, bold:true}), r(branch.customerName, {size:BS})]),
-        spacer(80),
-
-        // Cancellation details
-        para([r('รายละเอียดการยกเลิก', {size:HS, bold:true, color:NAVY})], { before:80 }),
-        hr(),
-        para([r(`วันที่มีผลยกเลิก: `, {size:BS, bold:true}), r(cancelDate || '......................', {size:BS})]),
-        spacer(80),
-
-        // Main body
-        para([r(mainBody, {size:BS})], { extra:{ spacing:{ line:LS, lineRule:'auto', before:0, after:0 } } }),
-        spacer(80),
-
-        // Reason
-        para([r('เหตุผลการยกเลิก:', {size:BS, bold:true})]),
-        para([r(cancelReason || '(ไม่ได้ระบุ)', {size:BS, italic: !cancelReason, color: cancelReason ? BC : GR })]),
-        spacer(80),
-
-        // Post-cancellation obligations
-        para([r('ข้อตกลงภายหลังการยกเลิกสัญญา', {size:HS, bold:true, color:NAVY})], { before:80 }),
-        hr(),
-        para([r(afterCancel, {size:BS})]),
-        spacer(80),
-        para([r('ทั้งสองฝ่ายได้อ่านและเข้าใจเนื้อหาในหนังสือฉบับนี้โดยละเอียดแล้ว จึงได้ลงลายมือชื่อไว้เป็นหลักฐาน', {size:BS})]),
-        spacer(200),
-
-        // Signatures
-        para([r('ลายมือชื่อคู่สัญญา', {size:HS, bold:true, color:NAVY})], { before:80 }),
-        hr(),
-        spacer(80),
-        sigTable,
-        spacer(160),
-
-        // Witnesses
-        para([r('พยาน', {size:HS, bold:true, color:NAVY})]),
-        hr(),
-        spacer(80),
-        witnessTable,
-
-        spacer(80),
-        hr(),
-        para([r(`เอกสารฉบับนี้สร้างโดย DomiCha Franchise System — บริษัท โดมิพลัสกรุ๊ป จำกัด`, {size:SS, color:GR})],
-          { align: AlignmentType.CENTER }),
-      ]
-    }]
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1100, bottom: 1000, left: 1500, right: 1300 } } },
+      children,
+    }],
   });
-
   return Packer.toBlob(doc);
 }
 </script>
