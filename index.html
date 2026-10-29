@@ -2129,6 +2129,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   } catch (e) { logoData = null; }
 
   const FONT = "TH SarabunPSK";
+  const ONE = cancelType === 'BY_FRANCHISEE';
   const BS = 22, SS = 20, HS = 32, TS = 32;
   const NAVY = '1A3A5C', RED = '8B0000', GR = '666666', BC = '222222';
   const NB = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
@@ -2145,7 +2146,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const chk = (on) => new TextRun({ text: on ? '☑ ' : '☐ ', font: 'Segoe UI Symbol', size: BS, color: BC });
   const p = (runs, o = {}) => new Paragraph({
     alignment: o.align ?? AlignmentType.THAI_DISTRIBUTE,
-    spacing: { line: 276, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? 60 },
+    spacing: { line: ONE ? 252 : 276, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? (ONE ? 30 : 60) },
     indent: o.indent, keepNext: o.keepNext,
     children: Array.isArray(runs) ? runs : [runs],
   });
@@ -2162,7 +2163,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const sigCell = (lines, w = W) => new TableCell({
     width: { size: w, type: WidthType.DXA }, borders: noBorders, verticalAlign: VerticalAlign.TOP, children: lines });
   const sigLines = (name, role, note) => [
-    center([t('ลงชื่อ ..............................')], { before: 160 }),
+    center([t('ลงชื่อ ..............................')], { before: ONE ? 40 : 160 }),
     center([t('(' + name + ')')]),
     center([t(role, { size: SS, color: GR })]),
     ...(note ? [center([t(note, { size: SS, color: GR })])] : []),
@@ -2176,11 +2177,11 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const sigTable = (l, r) => new Table({
     width: { size: W * 2 + GAP, type: WidthType.DXA }, columnWidths: [W, GAP, W],
     borders: { ...noBorders, insideHorizontal: NB, insideVertical: NB },
-    rows: [mkRow(l, r), mkRow(witLines(), witLines())],
+    rows: ONE ? [mkRow(l, r)] : [mkRow(l, r), mkRow(witLines(), witLines())],
   });
 
   const header = (docTitle, sub) => [
-    ...(logoData ? [center([new ImageRun({ data: logoData, type: 'png', transformation: { width: 56, height: 56 } })], { after: 0 })] : []),
+    ...(logoData ? [center([new ImageRun({ data: logoData, type: 'png', transformation: { width: ONE ? 44 : 56, height: ONE ? 44 : 56 } })], { after: 0 })] : []),
     center([t('บริษัท โดมิพลัสกรุ๊ป จำกัด', { size: TS, bold: true, color: NAVY })], { after: 60 }),
     rule(),
     center([t(docTitle, { size: HS, bold: true, color: RED })], { after: 0 }),
@@ -2209,8 +2210,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
     ];
     children = [
       ...header('หนังสือแจ้งความประสงค์ขอยกเลิกสัญญาแฟรนไชส์', '(แฟรนไชส์ซีเป็นผู้ขอยกเลิกเอง)'),
-      left([t('เขียนที่  ' + DOT)]),
-      left([t('วันที่  ' + today)], { after: 100 }),
+      left([t('เขียนที่  ' + DOT + '          วันที่  ' + today)], { after: 60 }),
       left([t('เรื่อง  ', { bold: true }), t('ขอยกเลิกสัญญาแฟรนไชส์ DomiCha')]),
       left([t('เรียน  ', { bold: true }), t('บริษัท โดมิพลัสกรุ๊ป จำกัด')]),
       left([t('อ้างถึง  ', { bold: true }), t(`สัญญาแฟรนไชส์ DomiCha ฉบับลงวันที่ ${cDate} สาขา ${bName} (เลขสาขา ${bNo})`)], { after: 120 }),
@@ -2235,7 +2235,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
       body([t('จึงเรียนมาเพื่อโปรดทราบและดำเนินการต่อไป')]),
       sigTable(
         sigLines(name, 'ผู้แจ้งยกเลิก (แฟรนไชส์ซี)'),
-        sigLines('กรรมการผู้มีอำนาจ / ผู้รับมอบอำนาจ', 'ผู้รับทราบ (บริษัทฯ)')),
+        sigLines('กรรมการผู้มีอำนาจ', 'ผู้รับทราบ (บริษัทฯ)')),
     ];
   } else {
     // ═══ แบบที่ 2: บริษัทบอกเลิก เพราะแฟรนไชส์ซีผิดสัญญา ═══
