@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DomiCha — ระบบสร้างสัญญาแฟรนไชส์</title>
+
+  <!-- ── Dependencies ──────────────────────────────────────────────────── -->
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --navy:   #8B3A0A;   /* deep brown-orange (replaces navy) */
+      --blue:   #E8650A;   /* DomiCha orange (replaces blue) */
+      --teal:   #C45508;   /* darker orange accent */
+      --gold:   #F5A623;   /* amber highlight */
+      --light:  #FDEBD0;   /* cream/peach light */
+      --bg:     #FFF8F0;   /* warm cream background */
+      --card:   #FFFFFF;
+      --text:   #3D1F06;   /* dark brown text */
+      --muted:  #9B6A44;   /* muted brown */
+      --red:    #cc2200;
+      --dblue:  #1155bb;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(140,60,10,.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── App header ──────────────────────────────────────────────────── */
+    .app-header {
+      background: linear-gradient(135deg, #8B3A0A 0%, #E8650A 60%, #F5A623 100%);
+      color: white;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      box-shadow: 0 3px 16px rgba(140,60,10,.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .app-header::after {
+      content: '';
+      position: absolute;
+      right: -40px; top: -40px;
+      width: 180px; height: 180px;
+      background: rgba(255,255,255,.07);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .app-header .logo {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+    .app-header h1 {
+      font-size: 21px;
+      font-weight: 700;
+      letter-spacing: .4px;
+      text-shadow: 0 1px 4px rgba(0,0,0,.25);
+    }
+    .app-header p  { font-size: 13px; opacity: .82; margin-top: 2px; }
+    .badge {
+      margin-left: auto;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+      padding: 28px 32px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      background: linear-gradient(90deg, #8B3A0A 0%, #C45508 70%, #E8650A 100%);
+      color: white;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-header .icon { font-size: 18px; }
+    .card-body { padding: 20px; }
+
+    /* ── Form grid ───────────────────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #8B3A0A;
+      margin-bottom: 5px;
+    }
+    .field label .req { color: var(--red); margin-left: 2px; }
+    .field input, .field textarea, .field select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #F0CBA8;
+      border-radius: 8px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      transition: border-color .15s, box-shadow .15s;
+      background: #FFFBF7;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      outline: none;
+      border-color: #E8650A;
+      box-shadow: 0 0 0 3px rgba(232,101,10,.14);
+      background: white;
+    }
+    .field input.highlight { border-color: var(--gold); background: #FFFBF0; }
+    .field textarea { resize: vertical; min-height: 70px; }
+
+    .section-divider {
+      grid-column: 1 / -1;
+      margin: 6px 0 2px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #F0CBA8;
+      font-size: 13px;
+      font-weight: 700;
+      color: #C45508;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────── */
+    .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Preview card ────────────────────────────────────────────────── */
+    .preview-box {
+      background: #FFFBF7;
+      border: 1.5px solid #F0CBA8;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      min-height: 160px;
+    }
+    .preview-box .pv-row { margin-bottom: 4px; }
+    .preview-box .pv-label {
+      font-weight: 700;
+      color: #8B3A0A;
+      min-width: 120px;
+      display: inline-block;
+    }
+    .preview-box .pv-val { color: #5C2E0A; }
+
+    /* ── Status / log ────────────────────────────────────────────────── */
+    .log-box {
+      background: #0e1b2d;
+      color: #7dd3fc;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: monospace;
+      font-size: 12px;
+      min-height: 80px;
+      max-height: 160px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    .log-box .ok   { color: #86efac; }
+    .log-box .warn { color: #fde68a; }
+    .log-box .err  { color: #fca5a5; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────── */
+    .btn-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn {
+      width: 100%;
+      padding: 13px 16px;
+      border: none;
+      border-radius: 9px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .12s, box-shadow .12s, opacity .12s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:hover  { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(0,0,0,.18); }
+    .btn:active { transform: translateY(0);    box-shadow: none; }
+    .btn:disabled { opacity: .50; cursor: not-allowed; transform: none; }
+
+    .btn-primary { background: linear-gradient(135deg, #8B3A0A, #E8650A); color: white; box-shadow: 0 3px 14px rgba(232,101,10,.35); }
+    .btn-red     { background: linear-gradient(135deg, #8b0000, var(--red));  color: white; }
+    .btn-blue    { background: linear-gradient(135deg, #003380, var(--dblue)); color: white; }
+    .btn-outline {
+      background: #FFFBF7;
+      color: #8B3A0A;
+      border: 1.5px solid #F0CBA8;
+    }
+    .btn-outline:hover { background: #FFF0E0; }
+
+    /* ── Tips ────────────────────────────────────────────────────────── */
+    .tips {
+      background: linear-gradient(135deg, #FFF8EE, #FDEBD0);
+      border: 1.5px solid #F0CBA8;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12.5px;
+      color: #6B2E06;
+      line-height: 1.7;
+    }
+    .tips b { color: #8B3A0A; }
+
+    /* ── Spinner ─────────────────────────────────────────────────────── */
+    .spin {
+      width: 18px; height: 18px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Apps Script URL box ────────────────────────────────────────── */
+    #appsScriptUrl {
+      border: 1px solid #F0CBA8;
+      background: #FFFBF7;
+      color: #3D1F06;
+    }
+    #appsScriptUrl:focus {
+      outline: none;
+      border-color: #E8650A;
+      box-shadow: 0 0 0 3px rgba(232,101,10,.14);
+    }
+
+    /* ── Branch Management UI ───────────────────────────────────────── */
+    .manage-search-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .manage-search-row input {
+      flex: 1; padding: 9px 12px; border: 1.5px solid #F0CBA8;
+      border-radius: 8px; font-family: 'Sarabun',sans-serif;
+      font-size: 15px; background: #FFFBF7; color: #3D1F06;
+    }
+    .manage-search-row input:focus {
+      outline: none; border-color: #E8650A;
+      box-shadow: 0 0 0 3px rgba(232,101,10,.14);
+    }
+    .btn-search {
+      background: linear-gradient(135deg, #8B3A0A, #E8650A);
+      color: white; border: none; border-radius: 8px;
+      padding: 9px 18px; font-size: 15px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-search:hover { opacity: .9; }
+
+    .branch-info-box {
+      display: none; margin-top: 14px;
+      background: #FFF8F0; border: 1.5px solid #F0CBA8;
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .branch-info-box.visible { display: block; }
+
+    .bi-row { display: flex; justify-content: space-between; align-items: flex-start;
+      border-bottom: 1px solid #F0CBA8; padding: 6px 0; font-size: 14px; gap: 8px; }
+    .bi-row:last-child { border-bottom: none; }
+    .bi-label { color: var(--muted); font-weight: 600; min-width: 90px; }
+    .bi-val   { color: var(--text); text-align: right; word-break: break-all; }
+
+    .status-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 700; letter-spacing: .4px;
+    }
+    .sb-GENERATED         { background:#E3F2FD; color:#1565C0; }
+    .sb-SENT              { background:#E8EAF6; color:#303F9F; }
+    .sb-SIGNED            { background:#E0F7FA; color:#006064; }
+    .sb-PAID              { background:#F3E5F5; color:#6A1B9A; }
+    .sb-TRAINING          { background:#FFF8E1; color:#F57F17; }
+    .sb-ACTIVE            { background:#E8F5E9; color:#1B5E20; }
+    .sb-CANCELLED_BY_FRANCHISEE { background:#FFF3E0; color:#E65100; }
+    .sb-CANCELLED_BY_FRANCHISOR { background:#FFEBEE; color:#B71C1C; }
+
+    .cancel-section {
+      display: none; margin-top: 16px;
+      border-top: 2px dashed #F0CBA8; padding-top: 14px;
+    }
+    .cancel-section.visible { display: block; }
+    .cancel-section h4 {
+      margin: 0 0 12px; color: #B71C1C; font-size: 15px; font-weight: 700;
+    }
+    .cancel-type-row {
+      display: flex; gap: 10px; margin-bottom: 12px;
+    }
+    .cancel-type-btn {
+      flex: 1; padding: 9px; border-radius: 8px; border: 2px solid #F0CBA8;
+      background: #FFFBF7; color: var(--text); font-size: 13px;
+      font-weight: 600; cursor: pointer; text-align: center;
+      transition: all .15s; font-family: 'Sarabun',sans-serif;
+    }
+    .cancel-type-btn.active-franchisee {
+      border-color: #E65100; background: #FFF3E0; color: #E65100;
+    }
+    .cancel-type-btn.active-franchisor {
+      border-color: #B71C1C; background: #FFEBEE; color: #B71C1C;
+    }
+    .cancel-field { margin-bottom: 10px; }
+    .cancel-field label { display: block; font-size: 12px; font-weight: 700;
+      color: var(--muted); margin-bottom: 4px; letter-spacing: .3px; }
+    .cancel-field input, .cancel-field textarea {
+      width: 100%; box-sizing: border-box; padding: 8px 10px;
+      border: 1.5px solid #F0CBA8; border-radius: 7px;
+      font-family: 'Sarabun',sans-serif; font-size: 14px;
+      background: #FFFBF7; color: var(--text);
+    }
+    .cancel-field textarea { height: 70px; resize: vertical; }
+    .cancel-field input:focus, .cancel-field textarea:focus {
+      outline: none; border-color: #E8650A;
+      box-shadow: 0 0 0 3px rgba(232,101,10,.14);
+    }
+    .btn-cancel-doc  { background: linear-gradient(135deg,#BF360C,#E64A19); color:white; }
+    .btn-cancel-conf { background: linear-gradient(135deg,#B71C1C,#D32F2F); color:white; }
+
+    /* ── Footer ──────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ App Header ══════════════════════════════════════════════════════════ -->
+<div class="app-header">
+  <div class="logo">
+    <img src="data:image/png;base64,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" alt="DomiCha Logo" style="width:90px;height:90px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.30));">
+  </div>
+  <div>
+    <h1>ระบบสร้างสัญญาแฟรนไชส์โดมิชา</h1>
+    <p>DomiCha Franchise Contract Generator — บริษัท โดมิพลัสกรุ๊ป จำกัด</p>
+  </div>
+  <span class="badge">v2.0 · 2567</span>
+</div>
+
+<!-- ══ Main layout ══════════════════════════════════════════════════════════ -->
+<div class="layout">
+
+  <!-- ── Left: Form ────────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">📝</span> กรอกข้อมูลสัญญา
+    </div>
+    <div class="card-body">
+      <form id="contractForm">
+        <div class="form-grid">
+
+          <!-- Section: เอกสาร -->
+          <div class="section-divider">📄 ข้อมูลเอกสาร</div>
+
+          <div class="field">
+            <label>เลขสาขา / เลขสัญญา <span class="req">*</span></label>
+            <input type="text" id="branchNo" placeholder="เช่น DMC0022"
+                   value="DMC0022" class="highlight" required>
+          </div>
+          <div class="field">
+            <label>วันที่ทำสัญญา <span class="req">*</span></label>
+            <input type="text" id="contractDate" placeholder="เช่น 1 มกราคม 2568" required>
+          </div>
+
+          <!-- Section: แฟรนไชส์ซี -->
+          <div class="section-divider">👤 ข้อมูลแฟรนไชส์ซี (ลูกค้า)</div>
+
+          <div class="field full">
+            <label>ชื่อ-นามสกุล ลูกค้า <span class="req">*</span></label>
+            <input type="text" id="customerName" placeholder="เช่น นาย สมชาย ใจดี" required>
+          </div>
+          <div class="field full">
+            <label>ที่อยู่ <span class="req">*</span></label>
+            <textarea id="address" placeholder="บ้านเลขที่ ซอย ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์" required></textarea>
+          </div>
+          <div class="field">
+            <label>เบอร์โทรศัพท์ <span class="req">*</span></label>
+            <input type="text" id="phone" placeholder="0xx-xxxxxxx" required>
+          </div>
+          <div class="field">
+            <label>เลขบัตรประชาชน <span class="req">*</span></label>
+            <input type="text" id="idCard" placeholder="X XXXX XXXXX XX X" required>
+          </div>
+
+          <!-- Section: สาขา -->
+          <div class="section-divider">🏪 ข้อมูลสาขา</div>
+
+          <div class="field">
+            <label>ชื่อสาขา <span class="req">*</span></label>
+            <input type="text" id="branchName" placeholder="เช่น มินิบิ๊กซีอ่างศิลา" required>
+          </div>
+          <div class="field">
+            <label>จังหวัด</label>
+            <input type="text" id="province" placeholder="เช่น ชลบุรี">
+          </div>
+
+          <!-- Section: ค่าธรรมเนียม -->
+          <div class="section-divider">💰 ค่าธรรมเนียมและวันที่</div>
+
+          <div class="field">
+            <label>ค่าธรรมเนียมแฟรนไชส์ (บาท) <span class="req">*</span></label>
+            <input type="text" id="franchiseFee" placeholder="เช่น 69,000" required>
+          </div>
+          <div class="field">
+            <label>วันที่เริ่มมีผลบังคับ <span class="req">*</span></label>
+            <input type="text" id="startDate" placeholder="เช่น 1 มกราคม 2568" required>
+          </div>
+
+        </div><!-- end form-grid -->
+      </form>
+    </div>
+  </div><!-- end left card -->
+
+  <!-- ── Right: Sidebar ────────────────────────────────────────────────── -->
+  <div class="sidebar">
+
+    <!-- Preview -->
+    <div class="card">
+      <div class="card-header"><span class="icon">👁</span> ตัวอย่างข้อมูล</div>
+      <div class="card-body">
+        <div class="preview-box" id="preview">
+          <div class="pv-row" style="color:var(--muted);font-style:italic">
+            กรอกข้อมูลด้านซ้ายเพื่อดูตัวอย่าง…
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+      <div class="card-header"><span class="icon">⬇️</span> สร้างและดาวน์โหลด</div>
+      <div class="card-body">
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnBoth" onclick="generateBoth()">
+            <span id="spinBoth" class="spin"></span>
+            🧋 สร้าง 2 ฉบับ + อัปโหลด Drive
+          </button>
+          <button class="btn btn-red" id="btnOrig" onclick="generateOne('ต้นฉบับ','CC2200')">
+            📄 ดาวน์โหลด ต้นฉบับ (สีแดง)
+          </button>
+          <button class="btn btn-blue" id="btnCopy" onclick="generateOne('คู่ฉบับ','1155BB')">
+            📄 ดาวน์โหลด คู่ฉบับ (สีน้ำเงิน)
+          </button>
+          <button class="btn btn-outline" onclick="resetForm()">
+            🔄 ล้างแบบฟอร์ม
+          </button>
+        </div>
+        <div style="margin-top:16px;padding:12px 14px;background:#FFF8EE;border:1.5px dashed #F0A060;border-radius:8px;">
+          <label style="font-size:12px;font-weight:700;color:#8B3A0A;letter-spacing:.3px;">🔗 GOOGLE APPS SCRIPT URL</label>
+          <input type="url" id="appsScriptUrl"
+            value="https://script.google.com/macros/s/AKfycbxyCAlgbaNJdYDprN4akbcoL2xvgrXYAD2S51M-pBhBVHSj_LCFAe_FcV828qHh7NdM/exec"
+            placeholder="https://script.google.com/macros/s/…/exec"
+            style="display:block;width:100%;margin-top:6px;padding:8px 10px;border:1px solid #F0CBA8;border-radius:6px;font-size:13px;box-sizing:border-box;font-family:monospace;background:#FFFBF7;color:#3D1F06;">
+          <p style="margin:5px 0 0;font-size:11px;color:#9B6A44;">ใส่ URL จาก Apps Script → Deploy → Web App แล้วกด "สร้าง 2 ฉบับ + อัปโหลด Drive" จะอัปโหลดและบันทึก Sheet ให้อัตโนมัติ</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="card">
+      <div class="card-header"><span class="icon">🖥</span> สถานะ</div>
+      <div class="card-body">
+        <div class="log-box" id="log">
+          <span class="ok">✓ ระบบพร้อมใช้งาน</span><br>
+          <span style="color:#94a3b8">กรอกข้อมูลแล้วกดปุ่มเพื่อสร้างสัญญา</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Branch Management -->
+    <div class="card">
+      <div class="card-header"><span class="icon">📋</span> จัดการสาขา / ยกเลิกสัญญา</div>
+      <div class="card-body">
+
+        <!-- Search -->
+        <div class="manage-search-row">
+          <input type="text" id="mgrBranchNo" placeholder="เลขสาขา เช่น DMC0001"
+            onkeydown="if(event.key==='Enter') searchBranchInfo()">
+          <button class="btn-search" onclick="searchBranchInfo()">🔍 ค้นหา</button>
+        </div>
+
+        <!-- Branch Info Result -->
+        <div class="branch-info-box" id="branchInfoBox">
+          <div class="bi-row">
+            <span class="bi-label">สาขา</span>
+            <span class="bi-val"><b id="biNo">-</b> · <span id="biName">-</span></span>
+          </div>
+          <div class="bi-row">
+            <span class="bi-label">ลูกค้า</span>
+            <span class="bi-val" id="biCustomer">-</span>
+          </div>
+          <div class="bi-row">
+            <span class="bi-label">จังหวัด</span>
+            <span class="bi-val" id="biProvince">-</span>
+          </div>
+          <div class="bi-row">
+            <span class="bi-label">สถานะ</span>
+            <span class="bi-val"><span id="biStatusBadge" class="status-badge">-</span></span>
+          </div>
+          <div class="bi-row" id="biFolderRow" style="display:none">
+            <span class="bi-label">Drive</span>
+            <span class="bi-val"><a id="biFolderLink" href="#" target="_blank"
+              style="color:#1a73e8;font-size:12px">📁 เปิด Folder</a></span>
+          </div>
+          <div class="bi-row" id="biCancelRow" style="display:none">
+            <span class="bi-label">ยกเลิก</span>
+            <span class="bi-val">
+              <span id="biCancelType" style="font-size:12px;color:#B71C1C">-</span><br>
+              <span id="biCancelDate" style="font-size:11px;color:var(--muted)"></span>
+            </span>
+          </div>
+
+          <!-- Cancel Section (shown only when ACTIVE or pre-cancel) -->
+          <div class="cancel-section" id="cancelSection">
+            <h4>❌ ยกเลิกสัญญาสาขานี้</h4>
+
+            <!-- Cancel Type Toggle -->
+            <div class="cancel-type-row">
+              <button class="cancel-type-btn" id="ctBtnFr"
+                onclick="selectCancelType('BY_FRANCHISEE')">
+                🙋 แฟรนไชส์ซียกเลิกเอง
+              </button>
+              <button class="cancel-type-btn" id="ctBtnFo"
+                onclick="selectCancelType('BY_FRANCHISOR')">
+                🏢 บริษัทเป็นผู้ยกเลิก
+              </button>
+            </div>
+
+            <div class="cancel-field">
+              <label>วันที่ยกเลิก</label>
+              <input type="text" id="cancelDate" placeholder="เช่น 1 มกราคม 2568">
+            </div>
+            <div class="cancel-field">
+              <label>เหตุผลการยกเลิก</label>
+              <textarea id="cancelReason" placeholder="ระบุเหตุผลการยกเลิก…"></textarea>
+            </div>
+
+            <div class="btn-row" style="gap:8px;margin-top:4px;">
+              <button class="btn btn-cancel-doc" id="btnCancelDoc"
+                onclick="generateCancelDoc()" style="flex:1">
+                <span id="spinCancelDoc" class="spin"></span>
+                📄 สร้างสัญญายกเลิก
+              </button>
+              <button class="btn btn-cancel-conf" id="btnCancelConf"
+                onclick="confirmCancelBranch()" style="flex:1">
+                <span id="spinCancelConf" class="spin"></span>
+                ✅ ยืนยัน + บันทึก Drive
+              </button>
+            </div>
+            <p style="margin:8px 0 0;font-size:11px;color:var(--muted)">
+              "ยืนยัน + บันทึก Drive" จะสร้างสัญญายกเลิก อัปโหลดไปยัง folder สาขา และอัปเดตสถานะใน Sheet
+            </p>
+          </div><!-- end cancel-section -->
+
+        </div><!-- end branch-info-box -->
+
+        <!-- Manage status update (non-cancel) -->
+        <div id="statusUpdateBox" style="display:none;margin-top:14px;
+          background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:14px 16px;">
+          <p style="margin:0 0 10px;font-weight:700;color:#14532D;font-size:14px;">
+            🔄 อัปเดตสถานะ
+          </p>
+          <div class="btn-row" style="gap:8px;flex-wrap:wrap;">
+            <button class="btn" onclick="quickStatus('SENT')"
+              style="flex:1;min-width:90px;background:#E8EAF6;color:#303F9F;font-size:13px;">
+              📤 SENT
+            </button>
+            <button class="btn" onclick="quickStatus('SIGNED')"
+              style="flex:1;min-width:90px;background:#E0F7FA;color:#006064;font-size:13px;">
+              ✍️ SIGNED
+            </button>
+            <button class="btn" onclick="quickStatus('PAID')"
+              style="flex:1;min-width:90px;background:#F3E5F5;color:#6A1B9A;font-size:13px;">
+              💰 PAID
+            </button>
+            <button class="btn" onclick="quickStatus('TRAINING')"
+              style="flex:1;min-width:90px;background:#FFF8E1;color:#F57F17;font-size:13px;">
+              📚 TRAINING
+            </button>
+            <button class="btn" onclick="quickStatus('ACTIVE')"
+              style="flex:1;min-width:90px;background:#E8F5E9;color:#1B5E20;font-size:13px;">
+              ✅ ACTIVE
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="tips">
+      <b>💡 วิธีใช้งาน:</b><br>
+      1. กรอกข้อมูลทุกช่องที่มีเครื่องหมาย <b>*</b><br>
+      2. ตรวจสอบข้อมูลใน "ตัวอย่างข้อมูล"<br>
+      3. กดปุ่ม <b>สร้าง 2 ฉบับ</b> เพื่อดาวน์โหลดทั้ง ต้นฉบับ และ คู่ฉบับ<br>
+      4. ไฟล์ .docx จะบันทึกอัตโนมัติ<br><br>
+      <b>📋 เลขสาขาถัดไป:</b> DMC0022
+    </div>
+
+  </div><!-- end sidebar -->
+</div><!-- end layout -->
+
+<footer>
+  🧋 DomiCha Franchise System — บริษัท โดมิพลัสกรุ๊ป จำกัด &nbsp;|&nbsp; สร้างโดยระบบอัตโนมัติ
+</footer>
+
+<!-- ══ JavaScript ═══════════════════════════════════════════════════════════ -->
+<script>
+// ─── Live preview ──────────────────────────────────────────────────────────
+const FIELDS = [
+  ['branchNo','เลขสาขา'],['contractDate','วันที่สัญญา'],
+  ['customerName','ชื่อลูกค้า'],['branchName','ชื่อสาขา'],
+  ['phone','เบอร์โทร'],['idCard','บัตรประชาชน'],
+  ['franchiseFee','ค่าธรรมเนียม'],['startDate','วันที่เริ่ม'],
+];
+function updatePreview() {
+  const d = getData();
+  const rows = FIELDS.map(([id, label]) => {
+    const val = d[id] || '<span style="color:#ccc">-</span>';
+    return `<div class="pv-row"><span class="pv-label">${label}</span>
+            <span class="pv-val">${val}</span></div>`;
+  }).join('');
+  document.getElementById('preview').innerHTML = rows || '<span style="color:var(--muted)">-</span>';
+}
+FIELDS.forEach(([id]) => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updatePreview);
+});
+updatePreview();
+
+function getData() {
+  return {
+    branchNo:      v('branchNo'),
+    contractDate:  v('contractDate'),
+    customerName:  v('customerName'),
+    address:       v('address'),
+    phone:         v('phone'),
+    idCard:        v('idCard'),
+    branchName:    v('branchName'),
+    province:      v('province'),
+    franchiseFee:  v('franchiseFee'),
+    startDate:     v('startDate'),
+  };
+}
+function v(id) { return (document.getElementById(id)?.value || '').trim(); }
+
+function resetForm() {
+  document.getElementById('contractForm').reset();
+  document.getElementById('branchNo').value = 'DMC0022';
+  updatePreview();
+  log('ล้างแบบฟอร์มแล้ว', 'warn');
+}
+
+// ─── Logging ────────────────────────────────────────────────────────────────
+function log(msg, cls = '') {
+  const box = document.getElementById('log');
+  const line = document.createElement('div');
+  line.innerHTML = `<span class="${cls}">${msg}</span>`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ─── Validation ─────────────────────────────────────────────────────────────
+function validate(d) {
+  const required = ['branchNo','contractDate','customerName','address','phone','idCard','branchName','franchiseFee','startDate'];
+  for (const f of required) {
+    if (!d[f]) { alert(`กรุณากรอก: ${FIELDS.find(([id])=>id===f)?.[1] || f}`); return false; }
+  }
+  return true;
+}
+
+// ─── Generate both ──────────────────────────────────────────────────────────
+async function generateBoth() {
+  const d = getData();
+  if (!validate(d)) return;
+  setBusy(true, 'btnBoth', 'spinBoth');
+  log('─────────────────────────────');
+  log(`🧋 สร้างสัญญา เลขสาขา ${d.branchNo}…`);
+  try {
+    const origBlob = await generateOne('ต้นฉบับ', 'CC2200', d, false);
+    const copyBlob = await generateOne('คู่ฉบับ', '1155BB', d, false);
+    log('✓ สร้างและดาวน์โหลดสำเร็จทั้ง 2 ฉบับ', 'ok');
+
+    const url = (document.getElementById('appsScriptUrl')?.value || '').trim();
+    if (url) {
+      await uploadToDrive(origBlob, copyBlob, d, url);
+    } else {
+      log('ℹ ไม่ได้ใส่ Apps Script URL — ข้ามขั้นตอนอัปโหลด Drive', 'warn');
+    }
+  } catch(e) {
+    log('✗ เกิดข้อผิดพลาด: ' + e.message, 'err');
+    console.error(e);
+  } finally {
+    setBusy(false, 'btnBoth', 'spinBoth');
+  }
+}
+
+async function generateOne(label, color, d, standalone = true) {
+  if (standalone) {
+    d = getData();
+    if (!validate(d)) return;
+    log(`🧋 สร้าง ${label}…`);
+  }
+  log(`  ⚙ กำลังสร้างเอกสาร DOCX…`);
+  const blob = await buildDocx(d);
+  log(`  💧 กำลังใส่ลายน้ำ "${label}"…`);
+  const final = await addWatermark(blob, label, color);
+  const fname = `สัญญาแฟรนไชส์โดมิชา_${d.branchNo}_${label}.docx`;
+  saveAs(final, fname);
+  log(`  ✓ ดาวน์โหลด: ${fname}`, 'ok');
+  return final; // คืน blob สำหรับ upload Drive
+}
+
+// ─── Drive Upload Helpers ────────────────────────────────────────────────────
+async function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function uploadToDrive(origBlob, copyBlob, d, url) {
+  try {
+    log('☁️ กำลังอัปโหลดไปยัง Google Drive…');
+    log('  📦 แปลงไฟล์เป็น base64…');
+    const [origB64, copyB64] = await Promise.all([
+      blobToBase64(origBlob),
+      blobToBase64(copyBlob)
+    ]);
+
+    log('  📤 ส่งข้อมูลไปยัง Apps Script…');
+    const payload = JSON.stringify({
+      action:       'createContract',
+      branchNo:     d.branchNo,
+      branchName:   d.branchName,
+      customerName: d.customerName,
+      address:      d.address,
+      phone:        d.phone,
+      idCard:       d.idCard,
+      province:     d.province,
+      franchiseFee: d.franchiseFee,
+      contractDate: d.contractDate,
+      startDate:    d.startDate,
+      docxOriginal: origB64,
+      docxCopy:     copyB64
+    });
+
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    payload
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const result = await res.json();
+
+    if (result.success) {
+      const fd = result.data;
+      log(`  ✓ อัปโหลดสำเร็จ! สร้าง folder เรียบร้อย`, 'ok');
+      log(`  📋 บันทึก Sheet แล้ว (Status: GENERATED | วันที่: ${fd.dateCreated})`, 'ok');
+      // แสดง link โดดเด่น
+      const linkLine = document.createElement('div');
+      linkLine.style.cssText = 'margin:8px 0;padding:10px 14px;background:#e8f5e9;border:1.5px solid #4caf50;border-radius:8px;font-size:13px;';
+      linkLine.innerHTML = `📁 <strong>Drive Folder สาขา ${d.branchNo}:</strong> <a href="${fd.folderUrl}" target="_blank" style="color:#1a73e8;">${fd.folderUrl}</a>`;
+      document.getElementById('log').appendChild(linkLine);
+      document.getElementById('log').scrollTop = 9999;
+    } else {
+      log(`  ✗ Apps Script แจ้งข้อผิดพลาด: ${result.error}`, 'err');
+    }
+  } catch(err) {
+    log(`  ✗ ไม่สามารถเชื่อมต่อ Apps Script ได้: ${err.message}`, 'err');
+    log(`  ℹ ตรวจสอบ URL และ Deployment settings (Execute as: Me | Access: Anyone)`, 'warn');
+  }
+}
+
+function setBusy(busy, btnId, spinId) {
+  document.getElementById(btnId).disabled = busy;
+  document.getElementById(spinId).style.display = busy ? 'inline-block' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOCX BUILDER
+// ═══════════════════════════════════════════════════════════════════════════
+async function buildDocx(d) {
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    Header, Footer, AlignmentType, BorderStyle, WidthType,
+    VerticalAlign, PageNumber, TabStopType, TabStopPosition
+  } = window.docx;
+
+  // ─── Design tokens ────────────────────────────────────────────────────
+  const FONT = "TH SarabunPSK";
+  const BS = 32, H2 = 36, TS = 56, SS = 28, LS = 360;
+  const NAVY='1A3A5C', BLUE='2E6DA4', LG='D6E4F0', BC='222222', GR='666666';
+  const MG = { top:1440, bottom:1440, left:1701, right:1440 };
+  const CW = 8765;
+  const NO_B = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const NB   = { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B };
+
+  // ─── Helpers ──────────────────────────────────────────────────────────
+  const r = (text, o={}) => new TextRun({
+    text, font: FONT,
+    size:   o.size   ?? BS,
+    bold:   o.bold   ?? false,
+    color:  o.color  ?? BC,
+    italics: o.italic ?? false,
+  });
+
+  const spacer = (pt=80) => new Paragraph({
+    spacing:{before:pt,after:0}, children:[new TextRun("")]
+  });
+  const hr = (color=BLUE,size=6) => new Paragraph({
+    spacing:{before:80,after:80},
+    border:{bottom:{style:BorderStyle.SINGLE,size,color,space:2}},
+    children:[new TextRun("")]
+  });
+  const sH = t => new Paragraph({
+    spacing:{before:340,after:120,line:LS,lineRule:"auto"},
+    children:[r(t,{size:H2,bold:true,color:NAVY})],
+    border:{bottom:{style:BorderStyle.SINGLE,size:4,color:LG,space:2}},
+  });
+  const subH = t => new Paragraph({
+    spacing:{before:200,after:60,line:LS,lineRule:"auto"},
+    indent:{left:567},
+    children:[r(t,{bold:true,color:NAVY})],
+  });
+  const body = (t,ind=0) => new Paragraph({
+    alignment:AlignmentType.JUSTIFIED,
+    spacing:{before:40,after:40,line:LS,lineRule:"auto"},
+    indent:{left:ind,firstLine:ind>0?0:567},
+    children:[r(t)],
+  });
+  const cl = t => new Paragraph({
+    alignment:AlignmentType.JUSTIFIED,
+    spacing:{before:40,after:40,line:LS,lineRule:"auto"},
+    indent:{left:1134,firstLine:0},
+    children:[r(t)],
+  });
+  const scl = t => new Paragraph({
+    alignment:AlignmentType.JUSTIFIED,
+    spacing:{before:30,after:30,line:LS,lineRule:"auto"},
+    indent:{left:1701,hanging:567},
+    children:[r(t)],
+  });
+
+  const infoTable = rows => {
+    const COL=[2835,5930];
+    return new Table({
+      width:{size:CW,type:WidthType.DXA}, columnWidths:COL,
+      rows: rows.map(([lbl,val]) => new TableRow({
+        children:[
+          new TableCell({ borders:NB, width:{size:COL[0],type:WidthType.DXA},
+            margins:{top:60,bottom:60,left:0,right:120},
+            children:[new Paragraph({children:[r(lbl,{bold:true,color:NAVY})]})] }),
+          new TableCell({ borders:NB, width:{size:COL[1],type:WidthType.DXA},
+            margins:{top:60,bottom:60,left:120,right:0},
+            children:[new Paragraph({children:[r(val)]})] }),
+        ]
+      }))
+    });
+  };
+
+  const sigCell = (l1,l2,role) => {
+    const H = Math.floor(CW/2);
+    return new TableCell({
+      borders:NB, width:{size:H,type:WidthType.DXA},
+      margins:{top:160,bottom:100,left:120,right:120},
+      children:[
+        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:40},children:[r(l1)]}),
+        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:20},children:[r(l2)]}),
+        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:0},children:[r(role,{bold:true,color:NAVY})]}),
+      ]
+    });
+  };
+
+  // ─── Shortcut: fill placeholders ──────────────────────────────────────
+  const F = {
+    BranchName:   d.branchName   || '{{BranchName}}',
+    ContractDate: d.contractDate || '{{ContractDate}}',
+    CustomerName: d.customerName || '{{CustomerName}}',
+    Address:      d.address      || '{{Address}}',
+    Phone:        d.phone        || '{{Phone}}',
+    IDCard:       d.idCard       || '{{IDCard}}',
+    StartDate:    d.startDate    || '{{StartDate}}',
+    FranchiseFee: d.franchiseFee || '{{FranchiseFee}}',
+    BranchNo:     d.branchNo     || 'DMCxxxx',
+  };
+
+  // ─── Document ─────────────────────────────────────────────────────────
+  const doc = new Document({
+    styles:{
+      default:{ document:{ run:{ font:FONT, size:BS, color:BC } } },
+    },
+    sections:[{
+      properties:{
+        page:{ size:{width:11906,height:16838}, margin:MG }
+      },
+
+      // ── Header (with branch number) ────────────────────────────────
+      headers:{
+        default: new Header({
+          children:[
+            new Paragraph({
+              spacing:{before:0,after:100},
+              border:{bottom:{style:BorderStyle.SINGLE,size:8,color:BLUE,space:4}},
+              tabStops:[{type:TabStopType.RIGHT,position:TabStopPosition.MAX}],
+              children:[
+                r(`บริษัท โดมิพลัสกรุ๊ป จำกัด  |  สัญญาแฟรนไชส์โดมิชา  |  เลขสาขา: ${F.BranchNo}`,
+                  {size:22,color:BLUE}),
+                new TextRun({ children:["\t", PageNumber.CURRENT], font:FONT, size:22, color:BLUE }),
+              ]
+            })
+          ]
+        })
+      },
+
+      // ── Footer ────────────────────────────────────────────────────
+      footers:{
+        default: new Footer({
+          children:[
+            new Paragraph({
+              alignment:AlignmentType.CENTER,
+              spacing:{before:80,after:0},
+              border:{top:{style:BorderStyle.SINGLE,size:4,color:LG,space:4}},
+              children:[r("77/44 หมู่บ้านแกรนดิตี้เบย์อ่างศิลา ตำบลเสม็ด อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000",
+                {size:SS,color:GR})]
+            })
+          ]
+        })
+      },
+
+      children: [
+        // ── Title block ─────────────────────────────────────────────
+        new Paragraph({
+          alignment:AlignmentType.CENTER,
+          spacing:{before:140,after:60,line:360,lineRule:"auto"},
+          children:[r("สัญญาแฟรนไชส์โดมิชา",{size:TS,bold:true,color:NAVY})]
+        }),
+        new Paragraph({
+          alignment:AlignmentType.CENTER,
+          spacing:{before:0,after:80,line:360,lineRule:"auto"},
+          children:[r(`สาขา  ${F.BranchName}`,{size:40,color:BLUE})]
+        }),
+        hr(NAVY,14), spacer(100),
+
+        infoTable([
+          ["ทำที่","บริษัท โดมิพลัสกรุ๊ป จำกัด"],
+          ["วันที่",F.ContractDate],
+        ]),
+        spacer(140), hr(LG,4), spacer(120),
+
+        // ── Preamble ────────────────────────────────────────────────
+        body("สัญญานี้ทำขึ้นระหว่าง บริษัทโดมิพลัสกรุ๊ป จำกัด โดย นาย ณัฐพงษ์ อุทธะ ตั้งอยู่ เลขที่ 77/44 หมู่บ้านแกรนดิตี้เบย์อ่างศิลา หมู่ที่ 5 ตำบลเสม็ด อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000 ทะเบียนนิติบุคคลเลขที่ 0205567033352 กรรมการผู้มีอำนาจผูกพันบริษัท โดมิพลัสกรุ๊ป จำกัด ตามหนังสือรับรองของสำนักงานทะเบียน ซึ่งต่อไปในสัญญาเรียกว่า \"แฟรนไชส์ซอร์\" ฝ่ายหนึ่ง"),
+        spacer(60),
+        body(`กับ ${F.CustomerName}  ที่อยู่  ${F.Address}  เบอร์โทรศัพท์ ${F.Phone}  บัตรประชาชนเลขที่ ${F.IDCard}  ซึ่งต่อไปในสัญญาเรียกว่า "แฟรนไชส์ซี" อีกฝ่ายหนึ่ง`),
+        spacer(60),
+        body("โดยที่แฟรนไชส์ซอร์เป็นเจ้าของสิทธิ์และเครื่องหมายการค้า โดมิชา (DomiCha) ตลอดจนระบบการจัดจำหน่าย การออกแบบ คู่มือ สูตรเครื่องดื่ม จะทำความตกลงกับแฟรนไชส์ซีตามเงื่อนไขและข้อกำหนดในสัญญา ทั้งสองฝ่ายจึงตกลงทำสัญญากันดังนี้"),
+        spacer(160),
+
+        // ── ข้อ 1 ───────────────────────────────────────────────────
+        sH("ข้อ 1.  คำนิยาม"),
+        body("เพื่อให้เป็นไปตามเจตนารมณ์ของสัญญาธุรกิจแฟรนไชส์ฉบับนี้และรวมถึงเอกสารภาคผนวกที่ปรากฎตามแนบท้ายสัญญานี้ คำข้อความให้มีความหมายดังนี้",0),
+        spacer(40),
+        subH("ข้อ 1.1  แฟรนไชส์"),
+        cl(`หมายถึง สิทธิ์และเครื่องหมายการค้าที่แฟรนไชส์ซอร์อนุญาตให้แฟรนไชส์ซีได้ใช้ในการประกอบการร้านแฟรนไชส์ เพื่อการจัดจำหน่ายสินค้า (บริการ) ของแบรนด์โดมิชา สาขา ${F.BranchName} ตามที่ระบุในสัญญาฉบับนี้`),
+        subH("ข้อ 1.2  สัญญาธุรกิจแฟรนไชส์"),
+        cl("หมายถึง ข้อกำหนดข้อผูกพันระหว่างแฟรนไชส์ซอร์และแฟรนไชส์ซีตามที่ระบุและตามภาคผนวกที่ปรากฎตามแนบท้ายสัญญานี้ หรือตามที่ได้มีการแก้ไขโดยความเห็นชอบของทั้งสองฝ่าย"),
+        subH("ข้อ 1.3  แฟรนไชส์ซอร์"),
+        cl("หมายถึง บุคคลหรือนิติบุคคล ซึ่งหมายถึง บริษัท โดมิพลัสกรุ๊ป จำกัด และนาย ณัฐพงษ์ อุทธะ ผู้ซึ่งเป็นเจ้าของสิทธิ์และเครื่องหมายการค้า สำหรับการผลิต การจัดจำหน่ายสินค้า (บริการ) โดมิชา DomiCha และอนุญาตให้แฟรนไชส์ซีได้ใช้สิทธิ์เครื่องหมายการค้าดังกล่าวในการประกอบการร้านแฟรนไชส์"),
+        subH("ข้อ 1.4  แฟรนไชส์ซี"),
+        cl(`หมายถึง บุคคลหรือนิติบุคคล ซึ่งหมายถึง ${F.CustomerName}  เบอร์โทรศัพท์ ${F.Phone} ผู้ซึ่งได้รับการอนุญาตให้ประกอบการร้านแฟรนไชส์เพื่อการผลิต การจัดจำหน่ายสินค้า (บริการ) ชานมไข่มุกโดมิชา DomiCha และเครื่องดื่มอื่นๆ สาขา ${F.BranchName} ภายใต้สิทธิ์และเครื่องหมายการค้าของแฟรนไชส์ซอร์`),
+        subH("ข้อ 1.5  ร้านแฟรนไชส์"),
+        cl("หมายถึง ร้านค้าหรือกิจการซึ่งได้รับอนุญาตให้ดำเนินการผลิต การจัดจำหน่ายสินค้าบริการชานมไข่มุกโดมิชา (DomiCha) ภายใต้สิทธิ์และเครื่องหมายการค้าของแฟรนไชส์ซอร์"),
+        subH("ข้อ 1.6  เครื่องหมายการค้า"),
+        cl("หมายถึง เครื่องหมายการค้า เครื่องหมายบริการ และชื่อทางการค้าของ โดมิชา DomiCha ที่ได้จดทะเบียนไว้แล้ว เลขทะเบียน 241114876"),
+        subH("ข้อ 1.7  รายการสินค้า"),
+        cl("หมายถึง รายการสินค้าและหรือรายการบริการที่มีไว้เพื่อการจัดจำหน่ายหรือให้บริการแก่ลูกค้า โดยเป็นสินค้าและหรือบริการที่ผลิตหรือจัดทำขึ้นด้วยส่วนประกอบหรือกระบวนการที่มีความเฉพาะภายใต้สิทธิ์และเครื่องหมายการค้าของแฟรนไชส์ซอร์"),
+        subH("ข้อ 1.8  ลูกค้า"),
+        cl("หมายถึง บุคคลผู้ซื้อหรือประสงค์จะซื้อสินค้า (บริการ) โดมิชา DomiCha"),
+        subH("ข้อ 1.9  การเข้าถึงสินค้า (บริการ) โดมิชา"),
+        cl("หมายถึง แฟรนไชส์ซีต้องจัดเตรียมสถานที่และบริการพื้นฐานที่จำเป็นและเพียงพอสำหรับลูกค้าในการที่จะซื้อสินค้า (บริการ) โดมิชา การชำระเงิน และอื่นๆ ตามที่แฟรนไชส์ซอร์กำหนด"),
+        subH("ข้อ 1.10  การจัดจำหน่าย"),
+        cl("หมายถึง การขายสินค้า (บริการ) โดมิชา DomiCha ภายใต้ระบบการจัดจำหน่ายที่แฟรนไชส์ซอร์กำหนด"),
+        subH("ข้อ 1.11  ระบบการจัดจำหน่าย"),
+        cl("หมายถึง ระบบการผลิต การปฏิบัติงาน การบริหารร้านแฟรนไชส์เพื่อการขายสินค้า (บริการ) โดมิชา DomiCha ที่มีการเชื่อมต่อกันจากแฟรนไชส์ซอร์ไปยังแฟรนไชส์ซีและต่อไปยังลูกค้า"),
+        subH("ข้อ 1.12  มาตรฐานของระบบการจัดจำหน่าย"),
+        cl("หมายถึง มาตรฐานที่เกี่ยวข้องกับการประกอบการร้านแฟรนไชส์ของแฟรนไชส์ซี และสอดคล้องกับระบบการจัดจำหน่ายที่แฟรนไชส์ซอร์กำหนดและมอบให้กับแฟรนไชส์ซี"),
+        subH("ข้อ 1.13  เอกสารข้อมูล / บันทึกข้อมูล"),
+        cl("หมายถึง เอกสาร สัญลักษณ์ สื่ออิเล็กทรอนิกส์ที่ทำขึ้นหรือทำสำเนาหรือบันทึกไว้ในลักษณะอย่างหนึ่งอย่างใดหรืออยู่ในเครื่องคอมพิวเตอร์หรือในระบบอิเล็กทรอนิกส์หรือดิจิตอล ที่แฟรนไชส์ซีเก็บรักษาไว้เพื่อประโยชน์ในการใช้ประกอบการร้านแฟรนไชส์"),
+        subH("ข้อ 1.14  รายได้รวม"),
+        cl("หมายถึง รายได้ทั้งหมด ทั้งทางตรงและทางอ้อม ที่เกิดจากการจัดจำหน่ายสินค้า (บริการ) โดมิชา DomiCha หรือสินค้าอื่นๆ ที่เกิดขึ้นในร้านแฟรนไชส์"),
+        subH("ข้อ 1.15  งบการเงิน"),
+        cl("หมายถึง งบการเงินที่แฟรนไชส์ซีจัดทำขึ้นอย่างถูกต้องตามหลักกฎหมาย หรือตามที่แฟรนไชส์ซอร์กำหนด"),
+        subH("ข้อ 1.16  ข้อร้องเรียน"),
+        cl("หมายถึง เอกสารหรือข้อความจากระบบอิเล็กทรอนิกส์ที่มีเนื้อหาแสดงความไม่พึงพอใจต่อสินค้า (บริการ) โดมิชา DomiCha ที่ได้รับจากแฟรนไชส์ซี"),
+        subH("ข้อ 1.17  เหตุฉุกเฉินร้ายแรง"),
+        cl("หมายถึง เหตุฉุกเฉินที่เกิดขึ้นในระบบการจัดจำหน่าย ซึ่งส่งผลอย่างสำคัญต่อการขายสินค้า (บริการ) โดมิชา DomiCha เกิดความเสียหายกับอุปกรณ์สถานที่ หรือการบาดเจ็บหรือการเสียชีวิตของบุคคล ตลอดจนเหตุการณ์ที่แฟรนไชส์ซอร์ได้แจ้งให้ทราบเพื่อทำการตรวจสอบและเฝ้าระวัง"),
+        subH("ข้อ 1.18  เงื่อนไขการดำเนินงานตามปรกติ"),
+        cl("หมายถึง เงื่อนไขที่แฟรนไชส์ซีดำเนินการเพื่อการขายสินค้า (บริการ) โดมิชา DomiCha ภายใต้สถานการณ์ปรกติ ซึ่งไม่รวมถึงการเกิดภัยธรรมชาติ การจราจล ไฟฟ้าดับ ระบบโทรศัพท์ใช้การไม่ได้ และสภาพอากาศแปรปรวนผิดปรกติ"),
+
+        // ── ข้อ 2 ───────────────────────────────────────────────────
+        sH("ข้อ 2.  เครื่องหมายการค้าและข้อกำหนดในการใช้งาน"),
+        subH("ข้อ 2.1  สิทธิ์การใช้เครื่องหมายการค้า"),
+        cl("เครื่องหมายการค้า โดมิชา DomiCha เป็นของนาย ณัฐพงษ์ อุทธะ เลขทะเบียน 241114876 แฟรนไชส์ซีใช้ประโยชน์จากเครื่องหมายการค้าตามข้อกำหนดของเจ้าของเครื่องหมายการค้าตามที่ระบุในสัญญาฉบับนี้ เพื่อประกอบการค้าตามปรกติและอยู่ภายใต้ขอบเขตที่กำหนดไว้ในสัญญา แฟรนไชส์ซีตกลงว่าจะไม่กระทำการใดๆ อันเป็นการรบกวนหรือแย้งกับสิทธิ์การเป็นเจ้าของเครื่องหมายการค้าของแฟรนไชส์ซอร์ ไม่ว่าจะกระทำเพื่อประโยชน์ของตนเองหรือผู้อื่น ตลอดจนจะไม่กระทำการใดๆ ที่ฝ่าฝืนกฎหมายหรือขัดต่อความสงบเรียบร้อยหรือศีลธรรมอันดีของประชาชน"),
+        subH("ข้อ 2.2  การห้ามให้เช่าช่วงหรือโอนสิทธิ์"),
+        cl("แฟรนไชส์ซีสัญญาว่าจะไม่นำเครื่องหมายการค้าและร้านค้าตามสัญญาฉบับนี้ไม่ว่าทั้งหมดหรือบางส่วนไปให้บุคคลภายนอกใช้หรือเช่าช่วง เว้นแต่จะได้รับความยินยอมเป็นลายลักษณ์อักษรจากแฟรนไชส์ซอร์ ในกรณีที่มีบุคคลภายนอกใช้หรือเช่าช่วงหรือการเซ้งกิจการ บุคคลภายนอกจะต้องดำเนินการเซ็นเอกสารสัญญาฉบับใหม่กับแฟรนไชส์ซอร์ เรียนสูตรชงน้ำใหม่ รวมถึงชำระค่าแฟรนไชส์ให้แก่แฟรนไชส์ซอร์เป็นจำนวน 15,000 บาท"),
+
+        // ── ข้อ 3 ───────────────────────────────────────────────────
+        sH("ข้อ 3.  การให้สิทธิ์แฟรนไชส์ ระยะเวลาของสัญญา ค่าธรรมเนียม และการโอนสิทธิ์"),
+        subH("ข้อ 3.1  การให้สิทธิ์แฟรนไชส์"),
+        cl(`แฟรนไชส์ซอร์ (ผู้ให้สิทธิ์) ยินยอมให้แฟรนไชส์ซี (ผู้รับสิทธิ์) ประกอบการร้านแฟรนไชส์เพื่อการผลิตและหรือการจัดจำหน่ายสินค้า (บริการ) โดมิชา DomiCha สาขา ${F.BranchName} ด้วยระบบการจัดจำหน่าย สิทธิ์และเครื่องหมายการค้าของแฟรนไชส์ซอร์`),
+        subH("ข้อ 3.2  การจัดสร้างร้านแฟรนไชส์และความเป็นเจ้าของ"),
+        cl(`แฟรนไชส์ซีได้รับอนุญาตจัดสร้างร้านแฟรนไชส์เพื่อการผลิตและหรือการจัดจำหน่ายสินค้า (บริการ) โดมิชา DomiCha แก่ลูกค้า โดยการจัดสร้างร้านแฟรนไชส์ต้องเป็นไปตามการออกแบบที่ปรากฎตามแนบท้ายสัญญานี้ และแฟรนไชส์ซีเป็นผู้ออกค่าใช้จ่ายและมีสิทธิ์เป็นเจ้าของร้านแฟรนไชส์ดังกล่าว`),
+        subH("ข้อ 3.3  แหล่งวัตถุดิบ"),
+        cl("แหล่งวัตถุดิบที่ใช้ผลิตเพื่อการจัดจำหน่ายสินค้า (บริการ) โดมิชา DomiCha ต้องมาจากแฟรนไชส์ซอร์หรือจากผู้จำหน่ายที่แฟรนไชส์ซอร์อนุญาต"),
+        subH("ข้อ 3.4  สถานที่ตั้งร้านแฟรนไชส์"),
+        cl(`สาขา ${F.BranchName}`),
+        subH("ข้อ 3.5  ระยะเวลาของสิทธิ์แฟรนไชส์"),
+        cl("ระยะเวลาของสิทธิ์แฟรนไชส์ตามสัญญาฉบับนี้คือ ........... ปี ........... เดือน จนกว่าจะยกเลิกสัญญา (ยกเลิกสัญญาเป็นลายลักษณ์อักษร)"),
+        subH("ข้อ 3.6  วันที่เริ่มมีผลบังคับ"),
+        cl(`วันที่เริ่มมีผลบังคับการให้สิทธิ์แฟรนไชส์คือ  ${F.StartDate}`),
+        subH("ข้อ 3.7  ผลจากการยินยอม"),
+        cl("โดยผลจากการยินยอมตามสัญญาฉบับนี้ แฟรนไชส์ซีต้องดำเนินการดังนี้"),
+        scl("(1)  ยอมรับและปฏิบัติตามเงื่อนไขของสัญญา"),
+        scl("(2)  ปฏิบัติตามคำแนะนำของแฟรนไชส์ซอร์ทุกครั้งและตลอดระยะเวลาของสัญญา"),
+        scl("(3)  ทั้งสองฝ่ายเจตนาที่จะปฏิบัติตามเงื่อนไขการให้สิทธิ์แฟรนไชส์ตามที่ระบุในสัญญาฉบับนี้"),
+        subH("ข้อ 3.8  การชำระค่าธรรมเนียมแฟรนไชส์"),
+        cl(`แฟรนไชส์ซีชำระเงินค่าธรรมเนียมแฟรนไชส์จำนวน ${F.FranchiseFee} บาท ในวันทำสัญญา`),
+        subH("ข้อ 3.9  การโอนสิทธิ์"),
+        cl("แฟรนไชส์ซีต้องไม่โอนสิทธิ์ประกอบการร้านแฟรนไชส์ในรูปแบบของการขายกิจการ ให้เช่า แลกเปลี่ยน หรือในลักษณะอื่น ไม่ว่าจะทั้งหมดหรือบางส่วนให้แก่บุคคลหรือนิติบุคคลอื่น เว้นแต่ได้รับการยืนยันเป็นลายลักษณ์อักษรจากแฟรนไชส์ซอร์"),
+
+        // ── ข้อ 4 ───────────────────────────────────────────────────
+        sH("ข้อ 4.  หน้าที่ของแฟรนไชส์ซอร์"),
+        subH("ข้อ 4.1  การคุ้มครองพื้นที่"),
+        cl("ในระหว่างอายุสัญญาฉบับนี้ แฟรนไชส์ซอร์รับว่าจะไม่อนุญาตให้ผู้อื่นใช้เครื่องหมายการค้าดังกล่าวเพื่อประกอบกิจการค้าซึ่งมีสภาพอย่างเดียวกัน อันเป็นการแข่งขันกับกิจการแฟรนไชส์ในบริเวณอาณาเขตสถานที่ตั้งร้านค้าของแฟรนไชส์ซีตามแผนผังที่ปรากฎตามแนบท้ายสัญญานี้"),
+        subH("ข้อ 4.2  การป้องกันสิทธิ์"),
+        cl("แฟรนไชส์ซอร์จะต้องรับผิดชอบและป้องกันแฟรนไชส์ซีในกรณีบุคคลภายนอกเรียกร้องหรือกล่าวหาใดๆ อันเกี่ยวกับการใช้สิทธิ์ตามสัญญาฉบับนี้ว่าเป็นการละเมิดลิขสิทธิ์หรือสิทธิบัตรของผู้อื่น"),
+
+        // ── ข้อ 5 ───────────────────────────────────────────────────
+        sH("ข้อ 5.  หน้าที่ของแฟรนไชส์ซี"),
+        subH("ข้อ 5.1  การประกอบการร้านแฟรนไชส์"),
+        cl(`แฟรนไชส์ซีมีหน้าที่ประกอบการร้านแฟรนไชส์เพื่อการผลิตและหรือการจัดจำหน่ายสินค้า (บริการ) สาขา ${F.BranchName} ด้วยระบบการจัดจำหน่าย สิทธิ์และเครื่องหมายการค้าของแฟรนไชส์ซอร์`),
+        subH("ข้อ 5.2  การจัดสร้างร้านแฟรนไชส์"),
+        cl(`แฟรนไชส์ซีต้องจัดสร้างร้านแฟรนไชส์และดำเนินการผลิตและหรือการจัดจำหน่ายสินค้า (บริการ) สาขา ${F.BranchName} โดยแฟรนไชส์ซีเป็นผู้ออกค่าใช้จ่ายในการจัดสร้าง`),
+        subH("ข้อ 5.3  อุปกรณ์ที่จำเป็น"),
+        cl("แฟรนไชส์ซีต้องจัดหาอุปกรณ์ที่จำเป็นทั้งหมดสำหรับการผลิตและหรือการจัดจำหน่ายสินค้า (บริการ) โดมิชา DomiCha"),
+        subH("ข้อ 5.4  ข้อห้ามสำหรับแฟรนไชส์ซี"),
+        cl("แฟรนไชส์ซีต้องไม่ดำเนินการและปฏิบัติดังต่อไปนี้"),
+        scl("(1)  จำเป็นต้องใช้วัตถุดิบของโดมิชา DomiCha โดยบังคับซื้อ ได้แก่ แก้วสกรีนโดมิชา ชาแดง ชาไต้หวัน ชามะลิ ชาเขียว ม้วนซีลของโดมิชา"),
+        scl("(2)  ซื้อสินค้า (บริการ) โดมิชา DomiCha จากผู้รับสิทธิ์รายอื่น ยกเว้นตัวแทนจำหน่าย"),
+        scl("(3)  ไม่ควบรวมกิจการกับบุคคลหรือนิติบุคคลอื่น"),
+        scl("(4)  โอนกิจการในรูปแบบของการขายกิจการ ให้เช่า แลกเปลี่ยน หรือในลักษณะอื่น ไม่ว่าทั้งหมดหรือบางส่วน (เว้นแต่ได้รับอนุญาตจากแฟรนไชส์ซอร์)"),
+        scl("(5)  ไม่เปิดโอกาสให้บุคคลอื่นเข้ามาใช้สิทธิ์แฟรนไชส์ตามสัญญาฉบับนี้ ซึ่งหากมีบุคคลอื่นเข้ามาใช้สิทธิ์แฟรนไชส์จะถือว่าเป็นการละเมิดสัญญา"),
+        scl("(6)  ไม่นำวัตถุดิบที่เป็นของแบรนด์นำไปขายต่อในท้องตลาด โดยไม่ได้รับอนุญาตหากพบเห็นจะถือว่าละเมิดสัญญา"),
+        subH("ข้อ 5.5  การต่อเติมหรือเปลี่ยนแปลงร้าน"),
+        cl("ห้ามมิให้แฟรนไชส์ซีดำเนินการต่อเติม ตกแต่งอาณาเขตที่ตั้งร้านแฟรนไชส์ หรือเปลี่ยนแปลงประเภทการค้าหรือรายการสินค้าที่เป็นแบรนด์อื่นในสินค้ากลุ่มเดียวกันภายในร้านแฟรนไชส์ในระหว่างสัญญา เว้นแต่จะได้รับความยินยอมเป็นลายลักษณ์อักษรจากแฟรนไชส์ซอร์"),
+        subH("ข้อ 5.6  การซื้อสินค้าภายใต้เครื่องหมายการค้า"),
+        cl("แฟรนไชส์ซีจะต้องซื้อสินค้าภายใต้เครื่องหมายการค้าของแฟรนไชส์ซอร์ ตลอดจนสินค้าที่แฟรนไชส์ซอร์กำหนด และแฟรนไชส์ซีไม่สามารถนำสินค้าจำพวกอื่นๆ เข้ามาจำหน่ายในร้านแฟรนไชส์ได้ (เว้นแต่ได้รับอนุญาตจากแฟรนไชส์ซอร์)"),
+        subH("ข้อ 5.7  การฝึกอบรม"),
+        cl("แฟรนไชส์ซีจะต้องส่งลูกจ้างหรือตัวแทนเข้ารับการอบรมเกี่ยวกับวิธีการผลิตตามโครงการให้ความช่วยเหลือทางวิชาการ ในวัน เวลา และสถานที่ซึ่งแฟรนไชส์ซอร์แจ้งให้ทราบล่วงหน้า เพื่อให้สามารถเข้าใจและชำนาญในระบบการจัดจำหน่ายตามกรรมวิธีที่ถูกต้องและมาตรฐานคุณภาพสินค้า รวมทั้งแฟรนไชส์ซีจะต้องจัดหาเครื่องแบบที่แฟรนไชส์ซอร์กำหนดเพื่อให้ลูกจ้างหรือพนักงานสวมใส่ในเวลาปฏิบัติงาน โดยแฟรนไชส์ซีจะเป็นผู้ออกค่าใช้จ่ายเองทั้งสิ้น"),
+        subH("ข้อ 5.8  การตรวจสอบและรายงาน"),
+        cl("แฟรนไชส์ซีตกลงยินยอมให้แฟรนไชส์ซอร์หรือตัวแทนเข้าตรวจดูร้านแฟรนไชส์ได้ตลอดเวลาที่ร้านค้าเปิดทำการ และแฟรนไชส์ซีต้องจัดทำรายงานการจัดจำหน่าย (การให้บริการ) และค่าใช้จ่ายอื่นๆ ตามแบบฟอร์มและวิธีการที่แฟรนไชส์ซอร์กำหนด"),
+        subH("ข้อ 5.9  ภาษีการค้า"),
+        cl("แฟรนไชส์ซีต้องดำเนินการชำระภาษีการค้า และแสดงแบบรายการเสียภาษีอากรต่อทางราชการ ตลอดจนค่าใช้จ่ายต่างๆ ในการเสียภาษีการค้าเองทั้งสิ้น"),
+        subH("ข้อ 5.10  การป้องกันเครื่องหมายการค้า"),
+        cl("แฟรนไชส์ซีจะต้องป้องกันเครื่องหมายการค้ามิให้ผู้อื่นกระทำการล่วงล้ำสิทธิ์ในเครื่องหมายการค้าของแฟรนไชส์ซอร์ ไม่ว่าจะเป็นการใช้เครื่องหมายการค้าปลอม หรือการเลียนแบบ"),
+        subH("ข้อ 5.11  วัตถุดิบและอุปกรณ์"),
+        cl("บรรดาวัตถุดิบและอุปกรณ์ที่ใช้ในการผลิต การจัดจำหน่ายสินค้าและการให้บริการ แฟรนไชส์ซีจะต้องใช้หรือซื้อจากแฟรนไชส์ซอร์เท่านั้น เว้นแต่ได้รับอนุญาตจากแฟรนไชส์ซอร์เป็นลายลักษณ์อักษร"),
+        subH("ข้อ 5.12  การออกแบบร้านแฟรนไชส์"),
+        cl("การตกแต่งต่อเติม หรือดัดแปลงเปลี่ยนแปลง แฟรนไชส์ซีจะกระทำมิได้ เว้นแต่ได้รับอนุญาตจากแฟรนไชส์ซอร์เป็นลายลักษณ์อักษร"),
+        subH("ข้อ 5.13  โปรแกรมคอมพิวเตอร์และเอกสาร"),
+        cl("แฟรนไชส์ซีไม่มีสิทธิ์ปรับปรุง ดัดแปลง แก้ไขโปรแกรมคอมพิวเตอร์ ข้อมูล คู่มือและเอกสารที่เกี่ยวข้องกับโปรแกรมคอมพิวเตอร์ที่แฟรนไชส์ซอร์ส่งมอบตามสัญญานี้"),
+        subH("ข้อ 5.14  การห้ามคัดลอก"),
+        cl("แฟรนไชส์ซีจะไม่ทำการคัดลอกโปรแกรมคอมพิวเตอร์ เอกสาร ตามสัญญานี้โดยไม่ได้รับอนุญาตจากแฟรนไชส์ซอร์เป็นลายลักษณ์อักษร"),
+        subH("ข้อ 5.15  ลิขสิทธิ์ตราและชื่อ"),
+        cl("แฟรนไชส์ซียอมรับว่า ตราหรือชื่อของแฟรนไชส์ซอร์ที่ใช้ประทับลงบนคู่มือและเอกสารต่างๆ ที่เกี่ยวข้องกับโดมิชา (DomiCha) ตามสัญญานี้เป็นลิขสิทธิ์ของแฟรนไชส์ซอร์"),
+        subH("ข้อ 5.16  ราคาขายสินค้า"),
+        cl("แฟรนไชส์ซีตกลงจะขายสินค้า (บริการ) ในราคาที่แฟรนไชส์ซอร์กำหนด ในกรณีที่มีการเปลี่ยนแปลงราคาสินค้า (บริการ) แฟรนไชส์ซอร์จะเป็นผู้แจ้งเรื่องการเปลี่ยนแปลงราคาให้แฟรนไชส์ซีทราบ"),
+
+        // ── ข้อ 6 ───────────────────────────────────────────────────
+        sH("ข้อ 6.  มาตรฐานและเงื่อนไขทางเทคนิค"),
+        subH("ข้อ 6.1  การผลิตเพื่อการจัดจำหน่ายสินค้า (บริการ) โดมิชา"),
+        cl("แฟรนไชส์ซีต้องปฏิบัติโดยเคร่งครัดเพื่อให้การผลิตเพื่อการจัดจำหน่ายสินค้า (บริการ) โดมิชา (DomiCha) เป็นไปตามระบบการจัดจำหน่าย คู่มือปฏิบัติการ และคู่มือการประกอบการร้านแฟรนไชส์ที่ปรากฎตามแนบท้ายสัญญานี้"),
+        subH("ข้อ 6.2  การปฏิบัติตามมาตรฐาน"),
+        scl("(1)  แฟรนไชส์ซีต้องปฏิบัติอย่างเหมาะสมในทุกขั้นตอนตามมาตรฐาน เพื่อให้การผลิตเพื่อการจัดจำหน่ายสินค้า (บริการ) โดมิชา (DomiCha) แก่ลูกค้ามีความปลอดภัย น่าเชื่อถือ และราคาที่เหมาะสม"),
+        scl("(2)  แฟรนไชส์ซีต้องวางแผนในการผลิตเพื่อการจัดจำหน่ายสินค้า (บริการ) โดมิชา (DomiCha) แก่ลูกค้า มีปริมาณที่เพียงพอ มีคุณภาพ มีความปลอดภัย และน่าเชื่อถือ"),
+        subH("ข้อ 6.3  มาตรฐานความปลอดภัยและการบริหารจัดการ"),
+        scl("(1)  แฟรนไชส์ซีต้องปฏิบัติตามมาตรฐานความปลอดภัยและมาตรฐานการบริหารจัดการที่กำหนดโดยแฟรนไชส์ซอร์"),
+        scl("(2)  หากแฟรนไชส์ซีไม่สามารถปฏิบัติตามมาตรฐานดังกล่าว แฟรนไชส์ซีต้องรับผิดชอบค่าใช้จ่ายและค่าชดเชยแก่บุคคลที่ได้รับผลกระทบ"),
+        scl("(3)  แฟรนไชส์ซีพึงดำเนินธุรกิจตามหลักธรรมาภิบาลและหลักกฎหมาย"),
+        subH("ข้อ 6.4  การให้บริการลูกค้า"),
+        scl("(1)  แฟรนไชส์ซีต้องมีจริยธรรมและธรรมาภิบาลของผู้จัดจำหน่ายสินค้า (บริการ) โดมิชา (DomiCha)"),
+        scl("(2)  การดำเนินการต่อข้อร้องเรียนของลูกค้า แฟรนไชส์ซีต้องปฏิบัติตามขั้นตอนการดำเนินการต่อข้อร้องเรียนของลูกค้าตามที่แฟรนไชส์ซอร์ระบุไว้"),
+
+        // ── ข้อ 7 ───────────────────────────────────────────────────
+        sH("ข้อ 7.  การผิดสัญญา การเลิกสัญญา และข้อกำหนดภายหลังการสิ้นสุดสัญญา"),
+        subH("ข้อ 7.1  การบอกเลิกสัญญาทั่วไป"),
+        cl("หากคู่สัญญาฝ่ายใดไม่ปฏิบัติตามสัญญาหรือผิดสัญญาข้อใดข้อหนึ่ง คู่สัญญาอีกฝ่ายหนึ่งมีสิทธิ์บอกเลิกสัญญาได้โดยมีหนังสือบอกกล่าวไปยังคู่สัญญาอีกฝ่ายหนึ่งให้ทราบล่วงหน้าไม่น้อยกว่า 7 วัน"),
+        subH("ข้อ 7.2  กรณีแฟรนไชส์ซีละเมิดสัญญา"),
+        cl("ในกรณีที่แฟรนไชส์ซีมีการละเมิดสัญญา แฟรนไชส์ซอร์สามารถใช้สิทธิ์ที่มีทั้งหมดและการแก้ไขตามที่กำหนดในสัญญาหรือที่มีอยู่ภายใต้กฎหมาย รวมทั้งการบอกยกเลิกสัญญา ในกรณีต่อไปนี้"),
+        scl("(1)  แฟรนไชส์ซีไม่ชำระหรือปฏิเสธที่จะจ่ายเงินตามที่ระบุในสัญญา"),
+        scl("(2)  แฟรนไชส์ซีไม่จัดให้มีการจำหน่ายสินค้า (บริการ) โดมิชา (DomiCha) ตามที่กำหนดในสัญญา"),
+        scl("(3)  แฟรนไชส์ซีถูกฟ้องเกี่ยวกับการดำเนินการหรือศาลพิพากษาให้ล้มละลาย"),
+        scl("(4)  แฟรนไชส์ซีละเมิดสัญญานี้ ณ ข้อใดๆ ในสัญญานี้"),
+        scl("(5)  แฟรนไชส์ซีไม่เปิดกิจการเป็นระยะเวลาตั้งแต่ 2 เดือนขึ้นไป หรือไม่มีการสั่งซื้อสินค้าวัตถุดิบบังคับซื้อจากแฟรนไชส์ซอร์เป็นระยะเวลาตั้งแต่ 2 เดือนขึ้นไปโดยไม่มีเหตุอันสมควร"),
+        subH("ข้อ 7.3  การยกเลิกสัญญาโดยแฟรนไชส์ซอร์"),
+        cl("กรณีแฟรนไชส์ซอร์ต้องการยกเลิกสัญญา ต้องทำหนังสือเป็นลายลักษณ์อักษรแจ้งให้แฟรนไชส์ซีทราบ ระบุลักษณะของเหตุที่บอกยกเลิกสัญญา ก่อนเลิกสัญญาเป็นเวลาไม่น้อยกว่า 7 วัน"),
+        subH("ข้อ 7.4  ผลของการเลิกสัญญา"),
+        cl("ในกรณีที่สัญญานี้สิ้นสุดลงไม่ว่าจะด้วยเหตุใดๆ ก็ตาม แฟรนไชส์ซีจะต้องหยุดประกอบการร้านแฟรนไชส์ทันทีและไม่มีสิทธิ์ใช้เครื่องหมายการค้าต่อไป"),
+        subH("ข้อ 7.5  ค่าเสียหายกรณีแฟรนไชส์ซีผิดสัญญา"),
+        cl("ในกรณีแฟรนไชส์ซีเป็นฝ่ายผิดสัญญา แฟรนไชส์ซียินยอมให้แฟรนไชส์ซอร์ออกเอกสารตักเตือนครั้งแรกเพื่อแจ้งเหตุผิดสัญญา และยินยอมชดใช้ค่าเสียหาย 5,000 บาท"),
+
+        // ── ข้อ 8 ───────────────────────────────────────────────────
+        sH("ข้อ 8.  เอกสารสัญญา"),
+        body("บรรดาหนังสือหรือเอกสารต่างๆ ที่คู่สัญญาฝ่ายหนึ่งฝ่ายใดจะส่งให้กับคู่สัญญาอีกฝ่ายหนึ่ง เมื่อได้ส่งไปยังภูมิลำเนาของคู่สัญญาที่ได้ระบุไว้ในสัญญานี้ ให้ถือว่าคู่สัญญาอีกฝ่ายหนึ่งได้รับหนังสือเอกสารดังกล่าวแล้วเป็นการส่งโดยชอบด้วยกฎหมาย"),
+
+        // ── ข้อ 9 ───────────────────────────────────────────────────
+        sH("ข้อ 9.  การจัดการข้อพิพาท"),
+        body("หากมีข้อพิพาทเกิดขึ้นเกี่ยวกับสัญญาแฟรนไชส์ฉบับนี้ คู่สัญญาตกลงให้ทำการฟ้องร้องและดำเนินคดีที่ศาลแพ่งชลบุรี หรือโดยวิธีอนุญาโตตุลาการ"),
+        spacer(60),
+        body("หนังสือสัญญานี้ทำขึ้นเป็นสองฉบับ มีข้อความถูกต้องตรงกันทุกประการ คู่สัญญาได้อ่านและเข้าใจข้อความโดยตลอดแล้ว จึงได้ลงลายมือชื่อพร้อมทั้งประทับตรา (ถ้ามี) ไว้เป็นสำคัญต่อหน้าพยานและต่างยึดถือไว้ฝ่ายละฉบับ"),
+        spacer(60),
+        body("รายการอุปกรณ์และวัตถุดิบที่ลูกค้าได้รับไปจากแฟรนไชส์ จะรับประกัน 7 วัน นับตั้งแต่วันที่แฟรนไชส์ซีได้รับสินค้า"),
+
+        // ── Signature block ──────────────────────────────────────────
+        spacer(360), hr(LG,4), spacer(80),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing:{before:0,after:80},
+          children:[r("ลายมือชื่อและตราสัญลักษณ์",{size:H2,bold:true,color:NAVY})]
+        }),
+        spacer(120),
+
+        new Table({
+          width:{size:CW,type:WidthType.DXA},
+          columnWidths:[Math.floor(CW/2), CW-Math.floor(CW/2)],
+          rows:[
+            new TableRow({ children:[
+              sigCell("ลงชื่อ  ................................................","(นาย ณัฐพงษ์ อุทธะ)","แฟรนไชส์ซอร์"),
+              sigCell("ลงชื่อ  ................................................",`(${F.CustomerName})`,"แฟรนไชส์ซี"),
+            ]}),
+            new TableRow({ children:[
+              sigCell("ลงชื่อ  ................................................","(...........................................................)","พยาน"),
+              sigCell("ลงชื่อ  ................................................","(...........................................................)","พยาน"),
+            ]}),
+          ]
+        }),
+      ]
+    }]
+  });
+
+  return Packer.toBlob(doc);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WATERMARK INJECTOR  (JSZip — mirrors add_watermark.py logic)
+// ═══════════════════════════════════════════════════════════════════════════
+async function addWatermark(docxBlob, label, hexColor) {
+  const wm = (
+    '<w:p>'
+    + '<w:pPr><w:jc w:val="center"/></w:pPr>'
+    + '<w:r>'
+    +   '<w:rPr><w:rStyle w:val="PlaceholderText"/></w:rPr>'
+    +   '<w:pict>'
+    +     `<v:shape id="WaterMarkShape" o:spid="_x0000_s2049" type="#_x0000_t136" `
+    +     `style="position:absolute;left:0;text-align:left;`
+    +     `margin-left:0;margin-top:0;`
+    +     `width:468pt;height:117pt;`
+    +     `z-index:-251654144;`
+    +     `mso-position-horizontal:center;`
+    +     `mso-position-horizontal-relative:margin;`
+    +     `mso-position-vertical:center;`
+    +     `mso-position-vertical-relative:margin;`
+    +     `rotation:315" `
+    +     `o:allowincell="f" filled="t" fillcolor="#${hexColor}" stroked="f">`
+    +       `<v:fill on="t" type="solid" color="#${hexColor}" opacity=".4"/>`
+    +       '<v:path textpathok="t"/>'
+    +       `<v:textpath `
+    +         `style="font-family:&quot;TH SarabunPSK&quot;;`
+    +         `font-size:1pt;font-weight:bold;font-style:normal" `
+    +         `string="${label}" trim="t"/>`
+    +       '<w10:wrap type="none"/>'
+    +       '<w10:anchorlock/>'
+    +     '</v:shape>'
+    +   '</w:pict>'
+    + '</w:r>'
+    + '</w:p>'
+  );
+
+  const vmlNs = (
+    'xmlns:v="urn:schemas-microsoft-com:vml" '
+    + 'xmlns:o="urn:schemas-microsoft-com:office:office" '
+    + 'xmlns:w10="urn:schemas-microsoft-com:office:word" '
+  );
+
+  const zip = await JSZip.loadAsync(docxBlob);
+
+  const headerKeys = Object.keys(zip.files).filter(
+    k => k.startsWith('word/header') && k.endsWith('.xml')
+  );
+
+  for (const key of headerKeys) {
+    let xml = await zip.files[key].async('string');
+    // 1. Inject VML namespaces into <w:hdr>
+    if (!xml.includes('xmlns:v=')) {
+      xml = xml.replace('<w:hdr ', `<w:hdr ${vmlNs}`);
+    }
+    // 2. Insert watermark paragraph before first <w:p>
+    xml = xml.replace('<w:p>', wm + '<w:p>');
+    zip.file(key, xml);
+  }
+
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BRANCH MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+// State for current branch lookup
+let _currentBranch = null;
+let _cancelType    = null; // 'BY_FRANCHISEE' | 'BY_FRANCHISOR'
+
+const STATUS_LABELS = {
+  GENERATED:               'GENERATED — สร้างสัญญาแล้ว',
+  SENT:                    'SENT — ส่งให้ลูกค้าแล้ว',
+  SIGNED:                  'SIGNED — เซ็นสัญญาแล้ว',
+  PAID:                    'PAID — ชำระเงินแล้ว',
+  TRAINING:                'TRAINING — อยู่ระหว่างอบรม',
+  ACTIVE:                  'ACTIVE — เปิดสาขาแล้ว',
+  CANCELLED_BY_FRANCHISEE: 'ยกเลิก — แฟรนไชส์ซีแจ้งยกเลิก',
+  CANCELLED_BY_FRANCHISOR: 'ยกเลิก — บริษัทเป็นผู้ยกเลิก',
+};
+
+function getAppsScriptUrl() {
+  const url = (document.getElementById('appsScriptUrl')?.value || '').trim();
+  if (!url) {
+    alert('กรุณาใส่ Apps Script URL ในช่องด้านบนก่อน');
+    return null;
+  }
+  return url;
+}
+
+async function searchBranchInfo() {
+  const branchNo = (document.getElementById('mgrBranchNo')?.value || '').trim();
+  if (!branchNo) { alert('กรุณาระบุเลขสาขา'); return; }
+  const url = getAppsScriptUrl();
+  if (!url) return;
+
+  log('─────────────────────────────');
+  log(`🔍 ค้นหาข้อมูลสาขา ${branchNo}…`);
+
+  try {
+    const payload = JSON.stringify({ action: 'getBranchInfo', branchNo });
+    const res = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: payload
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const result = await res.json();
+
+    if (!result.success) {
+      log(`✗ ${result.error}`, 'err');
+      document.getElementById('branchInfoBox').classList.remove('visible');
+      document.getElementById('statusUpdateBox').style.display = 'none';
+      _currentBranch = null;
+      return;
+    }
+
+    _currentBranch = result.data;
+    renderBranchInfo(_currentBranch);
+    log(`✓ พบข้อมูลสาขา ${branchNo} | Status: ${_currentBranch.status}`, 'ok');
+
+  } catch (err) {
+    log(`✗ ค้นหาไม่สำเร็จ: ${err.message}`, 'err');
+  }
+}
+
+function renderBranchInfo(d) {
+  // Fill info fields
+  document.getElementById('biNo').textContent       = d.branchNo || '-';
+  document.getElementById('biName').textContent     = d.branchName || '-';
+  document.getElementById('biCustomer').textContent = d.customerName || '-';
+  document.getElementById('biProvince').textContent = d.province || '-';
+
+  // Status badge
+  const badge = document.getElementById('biStatusBadge');
+  const s = d.status || 'GENERATED';
+  badge.className   = `status-badge sb-${s}`;
+  badge.textContent = STATUS_LABELS[s] || s;
+
+  // Folder link
+  const folderRow = document.getElementById('biFolderRow');
+  if (d.folderLink) {
+    folderRow.style.display = '';
+    document.getElementById('biFolderLink').href = d.folderLink;
+  } else {
+    folderRow.style.display = 'none';
+  }
+
+  // Cancel info (if already cancelled)
+  const cancelRow = document.getElementById('biCancelRow');
+  if (d.cancelType) {
+    cancelRow.style.display = '';
+    document.getElementById('biCancelType').textContent =
+      d.cancelType === 'BY_FRANCHISEE' ? '🙋 แฟรนไชส์ซียกเลิกเอง' : '🏢 บริษัทเป็นผู้ยกเลิก';
+    document.getElementById('biCancelDate').textContent = 'วันที่: ' + (d.cancelDate || '-');
+  } else {
+    cancelRow.style.display = 'none';
+  }
+
+  // Show cancel section only for cancellable statuses
+  const cancelSection   = document.getElementById('cancelSection');
+  const statusUpdateBox = document.getElementById('statusUpdateBox');
+  const isCancelled     = s.startsWith('CANCELLED');
+
+  cancelSection.classList.toggle('visible', !isCancelled);
+  statusUpdateBox.style.display = (!isCancelled && s !== 'ACTIVE') ? 'block' : 'none';
+
+  // Show info box
+  document.getElementById('branchInfoBox').classList.add('visible');
+
+  // Reset cancel form
+  _cancelType = null;
+  document.getElementById('ctBtnFr').className = 'cancel-type-btn';
+  document.getElementById('ctBtnFo').className = 'cancel-type-btn';
+  document.getElementById('cancelDate').value   = '';
+  document.getElementById('cancelReason').value = '';
+}
+
+function selectCancelType(type) {
+  _cancelType = type;
+  document.getElementById('ctBtnFr').className = 'cancel-type-btn' +
+    (type === 'BY_FRANCHISEE' ? ' active-franchisee' : '');
+  document.getElementById('ctBtnFo').className = 'cancel-type-btn' +
+    (type === 'BY_FRANCHISOR' ? ' active-franchisor' : '');
+}
+
+async function quickStatus(status) {
+  if (!_currentBranch) { alert('กรุณาค้นหาสาขาก่อน'); return; }
+  const url = getAppsScriptUrl();
+  if (!url) return;
+
+  log(`📊 อัปเดตสถานะ → ${status}…`);
+  try {
+    const payload = JSON.stringify({
+      action: 'updateStatus',
+      branchNo: _currentBranch.branchNo,
+      status
+    });
+    const res    = await fetch(url, {
+      method:'POST', headers:{'Content-Type':'text/plain'}, body: payload
+    });
+    const result = await res.json();
+    if (result.success) {
+      log(`✓ อัปเดต ${_currentBranch.branchNo} → ${status} เรียบร้อย`, 'ok');
+      _currentBranch.status = status;
+      renderBranchInfo(_currentBranch);
+    } else {
+      log(`✗ ${result.error}`, 'err');
+    }
+  } catch (e) {
+    log(`✗ ${e.message}`, 'err');
+  }
+}
+
+// Download cancellation DOCX only (no Drive upload)
+async function generateCancelDoc() {
+  if (!validateCancelForm()) return;
+  setBusy(true, 'btnCancelDoc', 'spinCancelDoc');
+  log('─────────────────────────────');
+  log(`📄 สร้างสัญญายกเลิกสาขา ${_currentBranch.branchNo}…`);
+  try {
+    const cancelBlob = await buildCancelDocx(_currentBranch, _cancelType,
+      document.getElementById('cancelDate').value.trim(),
+      document.getElementById('cancelReason').value.trim());
+    const suffix = _cancelType === 'BY_FRANCHISEE' ? 'แฟรนไชส์ซียกเลิก' : 'แฟรนไชส์ซอร์ยกเลิก';
+    const fname  = `สัญญายกเลิก_${_currentBranch.branchNo}_${suffix}.docx`;
+    saveAs(cancelBlob, fname);
+    log(`✓ ดาวน์โหลด: ${fname}`, 'ok');
+  } catch (e) {
+    log(`✗ ${e.message}`, 'err');
+  } finally {
+    setBusy(false, 'btnCancelDoc', 'spinCancelDoc');
+  }
+}
+
+// Generate, download AND upload cancel DOCX + update Sheet
+async function confirmCancelBranch() {
+  if (!validateCancelForm()) return;
+  const url = getAppsScriptUrl();
+  if (!url) return;
+
+  setBusy(true, 'btnCancelConf', 'spinCancelConf');
+  log('─────────────────────────────');
+  log(`❌ ยืนยันยกเลิกสาขา ${_currentBranch.branchNo}…`);
+
+  try {
+    const cancelDate   = document.getElementById('cancelDate').value.trim();
+    const cancelReason = document.getElementById('cancelReason').value.trim();
+
+    // 1. สร้าง DOCX
+    log('  📄 สร้างสัญญายกเลิก DOCX…');
+    const cancelBlob = await buildCancelDocx(_currentBranch, _cancelType, cancelDate, cancelReason);
+    const suffix = _cancelType === 'BY_FRANCHISEE' ? 'แฟรนไชส์ซียกเลิก' : 'แฟรนไชส์ซอร์ยกเลิก';
+    const fname  = `สัญญายกเลิก_${_currentBranch.branchNo}_${suffix}.docx`;
+    saveAs(cancelBlob, fname); // ดาวน์โหลดด้วย
+
+    // 2. แปลง base64
+    log('  📦 แปลงเป็น base64…');
+    const cancelB64 = await blobToBase64(cancelBlob);
+
+    // 3. ส่งไป Apps Script
+    log('  📤 ส่งข้อมูลยกเลิกไปยัง Apps Script…');
+    const payload = JSON.stringify({
+      action:          'cancelContract',
+      branchNo:        _currentBranch.branchNo,
+      cancelType:      _cancelType,
+      cancelDate,
+      cancelReason,
+      cancelDocBase64: cancelB64
+    });
+    const res    = await fetch(url, {
+      method:'POST', headers:{'Content-Type':'text/plain'}, body: payload
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const rd = result.data;
+      log(`✓ บันทึกยกเลิกสำเร็จ! Status: ${rd.status}`, 'ok');
+      log(`  📋 วันที่ยกเลิก: ${rd.cancelDate} | Row ที่อัปเดต: ${rd.updatedRow}`, 'ok');
+      if (rd.cancelFileId) {
+        log(`  📁 สัญญายกเลิกบันทึกใน Drive: ${rd.cancelFileId}`, 'ok');
+      }
+      // รีเฟรช UI
+      _currentBranch.status     = rd.status;
+      _currentBranch.cancelType = _cancelType;
+      _currentBranch.cancelDate = rd.cancelDate;
+      renderBranchInfo(_currentBranch);
+    } else {
+      log(`✗ Apps Script แจ้งข้อผิดพลาด: ${result.error}`, 'err');
+    }
+  } catch (e) {
+    log(`✗ ${e.message}`, 'err');
+  } finally {
+    setBusy(false, 'btnCancelConf', 'spinCancelConf');
+  }
+}
+
+function validateCancelForm() {
+  if (!_currentBranch) { alert('กรุณาค้นหาสาขาก่อน'); return false; }
+  if (!_cancelType)    { alert('กรุณาเลือกประเภทการยกเลิก'); return false; }
+  const cancelDate = document.getElementById('cancelDate').value.trim();
+  if (!cancelDate) { alert('กรุณาระบุวันที่ยกเลิก'); return false; }
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CANCELLATION DOCX BUILDER
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason) {
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    AlignmentType, BorderStyle, WidthType, VerticalAlign
+  } = window.docx;
+
+  const FONT = "TH SarabunPSK";
+  const BS=32, HS=36, TS=48, SS=26, LS=360;
+  const NAVY='1A3A5C', BLUE='2E6DA4', RED='8B0000', GR='666666', BC='222222';
+  const NO_B = { style: BorderStyle.NONE, size:0, color:'FFFFFF' };
+  const NB   = { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B };
+
+  const r = (text, o={}) => new TextRun({
+    text, font: FONT,
+    size:   o.size   ?? BS,
+    bold:   o.bold   ?? false,
+    color:  o.color  ?? BC,
+    italics: o.italic ?? false,
+  });
+
+  const para = (children, opts={}) => new Paragraph({
+    spacing: { line: LS, lineRule:'auto', before: opts.before ?? 0, after: opts.after ?? 0 },
+    alignment: opts.align ?? AlignmentType.LEFT,
+    children: Array.isArray(children) ? children : [children],
+    ...opts.extra
+  });
+
+  const spacer = (pt=120) => para([new TextRun({text:''})], { before:pt });
+
+  const hr = () => new Paragraph({
+    spacing: { before:80, after:80 },
+    border: { bottom:{ style:BorderStyle.SINGLE, size:6, color:NAVY, space:2 }},
+    children: [new TextRun('')]
+  });
+
+  const cell = (children, opts={}) => new TableCell({
+    children: Array.isArray(children) ? children : [children],
+    borders: NB,
+    width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
+    verticalAlign: VerticalAlign.CENTER,
+    shading: opts.shading ? { fill: opts.shading } : undefined,
+  });
+
+  // ── Determine document type ──────────────────────────────────────
+  const isByFranchisee = cancelType === 'BY_FRANCHISEE';
+  const docTitle = isByFranchisee
+    ? 'หนังสือแจ้งความประสงค์ขอยกเลิกสัญญาแฟรนไชส์'
+    : 'หนังสือบอกเลิกสัญญาแฟรนไชส์';
+
+  const cancelTypeLabel = isByFranchisee
+    ? 'ผู้รับสิทธิ์แฟรนไชส์ (แฟรนไชส์ซี) แจ้งยกเลิก'
+    : 'ผู้ให้สิทธิ์แฟรนไชส์ (แฟรนไชส์ซอร์) เป็นผู้ยกเลิก';
+
+  const party1Label  = isByFranchisee ? 'ผู้แจ้งยกเลิก (แฟรนไชส์ซี)'  : 'ผู้บอกเลิกสัญญา (แฟรนไชส์ซอร์)';
+  const party1Name   = isByFranchisee ? branch.customerName : 'บริษัท โดมิพลัสกรุ๊ป จำกัด';
+  const party2Label  = isByFranchisee ? 'ผู้รับแจ้ง (แฟรนไชส์ซอร์)'   : 'ผู้รับการบอกเลิก (แฟรนไชส์ซี)';
+  const party2Name   = isByFranchisee ? 'บริษัท โดมิพลัสกรุ๊ป จำกัด' : branch.customerName;
+
+  const mainBody = isByFranchisee
+    ? `ข้าพเจ้า ${branch.customerName} ผู้รับสิทธิ์แฟรนไชส์ DomiCha สาขา ${branch.branchName} (เลขสาขา ${branch.branchNo}) ขอแจ้งความประสงค์ยกเลิกสัญญาแฟรนไชส์ ฉบับลงวันที่ตามที่ระบุในสัญญา กับบริษัท โดมิพลัสกรุ๊ป จำกัด โดยมีผลในวันที่ ${cancelDate || '......................'}`
+    : `บริษัท โดมิพลัสกรุ๊ป จำกัด ในฐานะผู้ให้สิทธิ์แฟรนไชส์ DomiCha ขอแจ้งบอกเลิกสัญญาแฟรนไชส์ กับ ${branch.customerName} ผู้รับสิทธิ์แฟรนไชส์ สาขา ${branch.branchName} (เลขสาขา ${branch.branchNo}) โดยมีผลในวันที่ ${cancelDate || '......................'}`;
+
+  const afterCancel = isByFranchisee
+    ? 'ข้าพเจ้าตกลงที่จะปฏิบัติตามข้อกำหนดและเงื่อนไขการยกเลิกสัญญาทุกประการ ตามที่บริษัทฯ กำหนด รวมถึงการคืนอุปกรณ์ ป้ายสาขา และข้อมูลลับทุกประเภทที่ได้รับจากบริษัทฯ'
+    : 'บริษัทฯ จะดำเนินการตามขั้นตอนการยกเลิกสัญญา และขอให้แฟรนไชส์ซีปฏิบัติตามข้อกำหนดการยกเลิก ได้แก่ การคืนอุปกรณ์ ป้ายสาขา และการชำระหนี้ค้างชำระทั้งหมด (หากมี) ภายใน 30 วัน นับจากวันที่ระบุข้างต้น';
+
+  // ── Signature table ──────────────────────────────────────────────
+  const sigBlock = (label, name) => [
+    para([r('ลงชื่อ ..............................................', {size:BS})]),
+    para([r(`       (${name})`, {size:BS})]),
+    para([r(`${label}`, {size:SS, color:GR})]),
+    para([r('วันที่ ........../........../..........', {size:SS, color:GR})]),
+  ];
+
+  const sigTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B, insideH:NO_B, insideV:NO_B },
+    rows: [new TableRow({ children: [
+      cell(sigBlock(party1Label, party1Name), { width: 4500 }),
+      cell([para([r('', {size:BS})])], { width: 700 }),
+      cell(sigBlock(party2Label, party2Name), { width: 4500 }),
+    ]})],
+  });
+
+  const witnessTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B, insideH:NO_B, insideV:NO_B },
+    rows: [new TableRow({ children: [
+      cell([
+        para([r('พยาน ..............................................', {size:BS})]),
+        para([r('       (............................................)', {size:BS})]),
+        para([r('พยานฝ่ายที่ 1', {size:SS, color:GR})]),
+      ], { width: 4500 }),
+      cell([para([r('', {size:BS})])], { width: 700 }),
+      cell([
+        para([r('พยาน ..............................................', {size:BS})]),
+        para([r('       (............................................)', {size:BS})]),
+        para([r('พยานฝ่ายที่ 2', {size:SS, color:GR})]),
+      ], { width: 4500 }),
+    ]})],
+  });
+
+  // ── Build document ────────────────────────────────────────────────
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: { margin: { top:1440, bottom:1440, left:1701, right:1440 } }
+      },
+      children: [
+
+        // Title block
+        para([r('บริษัท โดมิพลัสกรุ๊ป จำกัด', {size:TS, bold:true, color:NAVY})], { align: AlignmentType.CENTER }),
+        para([r('DomiCha Franchise System', {size:32, color:GR})], { align: AlignmentType.CENTER }),
+        spacer(60),
+        hr(),
+        spacer(60),
+
+        // Document title
+        para([r(docTitle, {size:HS, bold:true, color:RED})], { align: AlignmentType.CENTER }),
+        para([r(`(${cancelTypeLabel})`, {size:SS, color:GR})], { align: AlignmentType.CENTER }),
+        spacer(120),
+
+        // Branch info
+        para([r('ข้อมูลสาขา', {size:HS, bold:true, color:NAVY})], { before:80 }),
+        hr(),
+        para([r(`เลขสาขา: `, {size:BS, bold:true}), r(branch.branchNo, {size:BS})]),
+        para([r(`ชื่อสาขา: `, {size:BS, bold:true}), r(branch.branchName || '-', {size:BS})]),
+        para([r(`จังหวัด: `, {size:BS, bold:true}), r(branch.province || '-', {size:BS})]),
+        para([r(`แฟรนไชส์ซี: `, {size:BS, bold:true}), r(branch.customerName, {size:BS})]),
+        spacer(80),
+
+        // Cancellation details
+        para([r('รายละเอียดการยกเลิก', {size:HS, bold:true, color:NAVY})], { before:80 }),
+        hr(),
+        para([r(`วันที่มีผลยกเลิก: `, {size:BS, bold:true}), r(cancelDate || '......................', {size:BS})]),
+        spacer(80),
+
+        // Main body
+        para([r(mainBody, {size:BS})], { extra:{ spacing:{ line:LS, lineRule:'auto', before:0, after:0 } } }),
+        spacer(80),
+
+        // Reason
+        para([r('เหตุผลการยกเลิก:', {size:BS, bold:true})]),
+        para([r(cancelReason || '(ไม่ได้ระบุ)', {size:BS, italic: !cancelReason, color: cancelReason ? BC : GR })]),
+        spacer(80),
+
+        // Post-cancellation obligations
+        para([r('ข้อตกลงภายหลังการยกเลิกสัญญา', {size:HS, bold:true, color:NAVY})], { before:80 }),
+        hr(),
+        para([r(afterCancel, {size:BS})]),
+        spacer(80),
+        para([r('ทั้งสองฝ่ายได้อ่านและเข้าใจเนื้อหาในหนังสือฉบับนี้โดยละเอียดแล้ว จึงได้ลงลายมือชื่อไว้เป็นหลักฐาน', {size:BS})]),
+        spacer(200),
+
+        // Signatures
+        para([r('ลายมือชื่อคู่สัญญา', {size:HS, bold:true, color:NAVY})], { before:80 }),
+        hr(),
+        spacer(80),
+        sigTable,
+        spacer(160),
+
+        // Witnesses
+        para([r('พยาน', {size:HS, bold:true, color:NAVY})]),
+        hr(),
+        spacer(80),
+        witnessTable,
+
+        spacer(80),
+        hr(),
+        para([r(`เอกสารฉบับนี้สร้างโดย DomiCha Franchise System — บริษัท โดมิพลัสกรุ๊ป จำกัด`, {size:SS, color:GR})],
+          { align: AlignmentType.CENTER }),
+      ]
+    }]
+  });
+
+  return Packer.toBlob(doc);
+}
+</script>
+</body>
+</html>
