@@ -1383,8 +1383,8 @@ async function buildDocx(d) {
   const FONT = "TH SarabunPSK";
   const BS = 22, H2 = 28, TS = 32, SS = 20, LS = 340;
   const NAVY='1A3A5C', BLUE='2E6DA4', LG='D6E4F0', BC='222222', GR='666666';
-  const MG = { top:851, bottom:851, left:1134, right:851 };
-  const CW = 9921;
+  const MG = { top:851, bottom:851, left:1134, right:1134 };
+  const CW = 9638;
   const NO_B = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
   const NB   = { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B };
 
@@ -1439,7 +1439,7 @@ async function buildDocx(d) {
   });
 
   const infoTable = rows => {
-    const COL=[2835,7086];
+    const COL=[2835,6803];
     return new Table({
       width:{size:CW,type:WidthType.DXA}, columnWidths:COL,
       rows: rows.map(([lbl,val]) => new TableRow({
@@ -2158,7 +2158,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const rule   = () => new Paragraph({ spacing: { before: 0, after: 100 },
     border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: NAVY, space: 2 } }, children: [new TextRun('')] });
 
-  const W = 4760, GAP = 400;
+  const W = 4619, GAP = 400;
   const sigCell = (lines, w = W) => new TableCell({
     width: { size: w, type: WidthType.DXA }, borders: noBorders, verticalAlign: VerticalAlign.TOP, children: lines });
   const sigLines = (name, role, note) => [
@@ -2293,7 +2293,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const doc = new Document({
     styles: { default: { document: { run: { font: FONT, size: BS, language: { value: 'th-TH', bidirectional: 'th-TH' } } } } },
     sections: [{
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 851, bottom: 851, left: 1134, right: 851 } } },
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 851, bottom: 851, left: 1134, right: 1134 } } },
       children,
     }],
   });
