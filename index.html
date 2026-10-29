@@ -699,6 +699,22 @@
 
   <!-- KPI Cards -->
   <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card kpi-co">
+      <div class="kpi-num" id="kpiCompany">—</div>
+      <div class="kpi-label">🏬 สาขาบริษัท · ทั้งหมด</div>
+    </div>
+    <div class="kpi-card kpi-co">
+      <div class="kpi-num" id="kpiCompanyActive">—</div>
+      <div class="kpi-label">🏬 สาขาบริษัท · เปิดแล้ว</div>
+    </div>
+    <div class="kpi-card kpi-fr">
+      <div class="kpi-num" id="kpiFranchise">—</div>
+      <div class="kpi-label">🧋 แฟรนไชส์ · ทั้งหมด</div>
+    </div>
+    <div class="kpi-card kpi-fr">
+      <div class="kpi-num" id="kpiFranchiseActive">—</div>
+      <div class="kpi-label">🧋 แฟรนไชส์ · เปิดแล้ว</div>
+    </div>
     <div class="kpi-card kpi-total">
       <div class="kpi-num" id="kpiTotal">—</div>
       <div class="kpi-label">สาขาทั้งหมด</div>
@@ -867,6 +883,8 @@
   .kpi-sent     .kpi-num { color: #d97706; }
   .kpi-generated .kpi-num { color: #79583e; }
   .kpi-cancel   .kpi-num { color: #cc2200; }
+  .kpi-co       .kpi-num { color: #1d4ed8; }
+  .kpi-fr       .kpi-num { color: #b45309; }
 
   /* ── Tables section ──────────────────────────────── */
   .db-tables {
@@ -994,6 +1012,12 @@ function typeFiltered() {
 }
 
 function renderDashboardAll() {
+  const isCo = b => b.branchType === 'COMPANY';
+  const co = _dashData.filter(isCo), fr = _dashData.filter(b => !isCo(b));
+  document.getElementById('kpiCompany').textContent         = co.length;
+  document.getElementById('kpiCompanyActive').textContent   = co.filter(b => b.status === 'ACTIVE').length;
+  document.getElementById('kpiFranchise').textContent       = fr.length;
+  document.getElementById('kpiFranchiseActive').textContent = fr.filter(b => b.status === 'ACTIVE').length;
   const d = typeFiltered();
   renderKPI(d);
   renderProvinceTable(d);
