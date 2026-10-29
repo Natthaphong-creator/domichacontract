@@ -1389,8 +1389,12 @@ async function buildDocx(d) {
   const NB   = { top:NO_B, bottom:NO_B, left:NO_B, right:NO_B };
 
   // ─── Helpers ──────────────────────────────────────────────────────────
+  const NBX = (s) => String(s)
+      .replace(/บริษัท ?โดมิพลัสกรุ๊ป จำกัด/g, (m) => m.replace(/ /g, '\u00A0'))
+      .replace(/([\u0E00-\u0E7F]) (?=[0-9\u0E50-\u0E59])/g, '$1\u00A0')
+      .replace(/([0-9\u0E50-\u0E59%]) (?=[\u0E00-\u0E7F])/g, '$1\u00A0');
   const r = (text, o={}) => new TextRun({
-    text, font: FONT,
+    text: NBX(text), font: FONT,
     size:   o.size   ?? BS,
     bold:   o.bold   ?? false,
     color:  o.color  ?? BC,
@@ -1466,9 +1470,9 @@ async function buildDocx(d) {
 
   // ─── Shortcut: fill placeholders ──────────────────────────────────────
   const F = {
-    BranchName:   d.branchName   || '{{BranchName}}',
+    BranchName:   (d.branchName  || '{{BranchName}}').replace(/ +/g, '\u00A0'),
     ContractDate: d.contractDate || '{{ContractDate}}',
-    CustomerName: d.customerName || '{{CustomerName}}',
+    CustomerName: (d.customerName || '{{CustomerName}}').replace(/ +/g, '\u00A0'),
     Address:      d.address      || '{{Address}}',
     Phone:        d.phone        || '{{Phone}}',
     IDCard:       d.idCard       || '{{IDCard}}',
@@ -1480,7 +1484,7 @@ async function buildDocx(d) {
   // ─── Document ─────────────────────────────────────────────────────────
   const doc = new Document({
     styles:{
-      default:{ document:{ run:{ font:FONT, size:BS, color:BC } } },
+      default:{ document:{ run:{ font:FONT, size:BS, color:BC, language:{ value:'th-TH', bidirectional:'th-TH' } } } },
     },
     sections:[{
       properties:{
@@ -2131,8 +2135,12 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const noBorders = { top: NB, bottom: NB, left: NB, right: NB };
   const DOT = '........................';
 
+  const NBX = (s) => String(s)
+      .replace(/บริษัท ?โดมิพลัสกรุ๊ป จำกัด/g, (m) => m.replace(/ /g, '\u00A0'))
+      .replace(/([\u0E00-\u0E7F]) (?=[0-9\u0E50-\u0E59])/g, '$1\u00A0')
+      .replace(/([0-9\u0E50-\u0E59%]) (?=[\u0E00-\u0E7F])/g, '$1\u00A0');
   const t = (text, o = {}) => new TextRun({
-    text: String(text), font: FONT, size: o.size ?? BS, bold: o.bold, italics: o.italic, color: o.color ?? BC,
+    text: NBX(text), font: FONT, size: o.size ?? BS, bold: o.bold, italics: o.italic, color: o.color ?? BC,
   });
   const chk = (on) => new TextRun({ text: on ? '☑ ' : '☐ ', font: 'Segoe UI Symbol', size: BS, color: BC });
   const p = (runs, o = {}) => new Paragraph({
@@ -2180,8 +2188,8 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   ];
 
   const today = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
-  const name  = branch.customerName || DOT;
-  const bName = branch.branchName || DOT;
+  const name  = (branch.customerName || DOT).replace(/ +/g, '\u00A0');
+  const bName = (branch.branchName || DOT).replace(/ +/g, '\u00A0');
   const bNo   = branch.branchNo || DOT;
   const addr  = branch.address || DOT;
   const cDate = branch.contractDate || DOT;
@@ -2283,7 +2291,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   }
 
   const doc = new Document({
-    styles: { default: { document: { run: { font: FONT, size: BS } } } },
+    styles: { default: { document: { run: { font: FONT, size: BS, language: { value: 'th-TH', bidirectional: 'th-TH' } } } } },
     sections: [{
       properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 851, bottom: 851, left: 1134, right: 851 } } },
       children,
