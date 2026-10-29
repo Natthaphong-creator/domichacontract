@@ -2111,7 +2111,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   } = window.docx;
 
   const FONT = "TH SarabunPSK";
-  const BS = 32, SS = 26, HS = 36, TS = 44;
+  const BS = 32, SS = 24, HS = 34, TS = 40;
   const NAVY = '1A3A5C', RED = '8B0000', GR = '666666', BC = '222222';
   const NB = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
   const noBorders = { top: NB, bottom: NB, left: NB, right: NB };
@@ -2123,48 +2123,46 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const chk = (on) => new TextRun({ text: on ? '☑ ' : '☐ ', font: 'Segoe UI Symbol', size: BS, color: BC });
   const p = (runs, o = {}) => new Paragraph({
     alignment: o.align ?? AlignmentType.THAI_DISTRIBUTE,
-    spacing: { line: 320, before: o.before ?? 0, after: o.after ?? 60 },
+    spacing: { line: 252, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? 40 },
     indent: o.indent, keepNext: o.keepNext,
     children: Array.isArray(runs) ? runs : [runs],
   });
   const left   = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.LEFT });
   const center = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.CENTER });
-  const h      = (text) => p([t(text, { bold: true, color: NAVY })], { before: 140, align: AlignmentType.LEFT, keepNext: true });
+  const h      = (text) => p([t(text, { bold: true, color: NAVY })], { before: 80, after: 30, align: AlignmentType.LEFT, keepNext: true });
   const item   = (num, runs) => p([t(num + '  '), ...runs], { indent: { left: 540, hanging: 400 } });
   const check  = (on, runs) => p([chk(on), ...runs], { indent: { left: 540, hanging: 340 }, align: AlignmentType.LEFT });
   const body   = (runs) => p(runs, { indent: { firstLine: 720 } });
   const rule   = () => new Paragraph({ spacing: { before: 0, after: 100 },
     border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: NAVY, space: 2 } }, children: [new TextRun('')] });
 
-  const W = 4500, GAP = 360;
+  const W = 4400, GAP = 400;
   const sigCell = (lines, w = W) => new TableCell({
     width: { size: w, type: WidthType.DXA }, borders: noBorders, verticalAlign: VerticalAlign.TOP, children: lines });
   const sigLines = (name, role, note) => [
-    center([t('ลงชื่อ ..................................................')], { before: 240 }),
+    center([t('ลงชื่อ ..............................')], { before: 160 }),
     center([t('(' + name + ')')]),
     center([t(role, { size: SS, color: GR })]),
     ...(note ? [center([t(note, { size: SS, color: GR })])] : []),
     center([t('วันที่ ........../........../..........', { size: SS, color: GR })]),
   ];
+  const mkRow = (l, r) => new TableRow({ cantSplit: true, children: [sigCell(l), sigCell([p([t('')])], GAP), sigCell(r)] });
+  const witLines = () => [
+    center([t('ลงชื่อ ..............................')], { before: 100 }),
+    center([t('(..............................)')]),
+    center([t('พยาน', { size: SS, color: GR })])];
   const sigTable = (l, r) => new Table({
     width: { size: W * 2 + GAP, type: WidthType.DXA }, columnWidths: [W, GAP, W],
     borders: { ...noBorders, insideHorizontal: NB, insideVertical: NB },
-    rows: [new TableRow({ cantSplit: true, children: [sigCell(l), sigCell([p([t('')])], GAP), sigCell(r)] })],
+    rows: [mkRow(l, r), mkRow(witLines(), witLines())],
   });
-  const witnessTable = () => sigTable(
-    [center([t('ลงชื่อ ..................................................')], { before: 200 }),
-     center([t('(..................................................)')]),
-     center([t('พยาน', { size: SS, color: GR })])],
-    [center([t('ลงชื่อ ..................................................')], { before: 200 }),
-     center([t('(..................................................)')]),
-     center([t('พยาน', { size: SS, color: GR })])]);
 
   const header = (docTitle, sub) => [
     center([t('บริษัท โดมิพลัสกรุ๊ป จำกัด', { size: TS, bold: true, color: NAVY })], { after: 0 }),
     center([t('DomiCha Franchise System', { size: SS, color: GR })], { after: 60 }),
     rule(),
     center([t(docTitle, { size: HS, bold: true, color: RED })], { after: 0 }),
-    center([t(sub, { size: SS, color: GR })], { after: 120 }),
+    center([t(sub, { size: SS, color: GR })], { after: 80 }),
   ];
 
   const today = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -2213,12 +2211,9 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
       check(false, [t('เป็นไปตามข้อตกลงเพิ่มเติมที่ทำไว้เป็นลายลักษณ์อักษร ลงวันที่ ' + DOT)]),
 
       body([t('จึงเรียนมาเพื่อโปรดทราบและดำเนินการต่อไป')]),
-      p([t('')], { after: 60 }),
       sigTable(
         sigLines(name, 'ผู้แจ้งยกเลิก (แฟรนไชส์ซี)'),
-        sigLines('กรรมการผู้มีอำนาจ / ผู้รับมอบอำนาจ', 'ผู้รับทราบ (บริษัท โดมิพลัสกรุ๊ป จำกัด)')),
-      p([t('')], { after: 40 }),
-      witnessTable(),
+        sigLines('กรรมการผู้มีอำนาจ / ผู้รับมอบอำนาจ', 'ผู้รับทราบ (บริษัทฯ)')),
     ];
   } else {
     // ═══ แบบที่ 2: บริษัทบอกเลิก เพราะแฟรนไชส์ซีผิดสัญญา ═══
@@ -2261,26 +2256,22 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
       ...(on(6) ? [p([t('กรณีผิดสัญญาตามข้อ 1 (6) (ใช้แก้วหรือชาอื่นที่ไม่ใช่ของ DomiCha)  ', { bold: true }),
         t('แฟรนไชส์ซีต้องปิดร้านและถอดป้ายสาขาภายใน 7 วัน นับแต่วันที่ได้รับเอกสารฉบับนี้', { bold: true, color: RED }),
         t(' และไม่ใช้เครื่องหมายการค้า DomiCha อีกต่อไป')], { indent: { left: 540 }, align: AlignmentType.LEFT })] : []),
-      item('4.2', [t('ถอดป้ายสาขา และส่งคืนอุปกรณ์ คู่มือ และข้อมูลลับทุกประเภทที่ได้รับจากแฟรนไชส์ซอร์ ภายใน 30 วัน นับจากวันที่การบอกเลิกมีผล')]),
-      item('4.3', [t('ชำระหนี้ค้างชำระทั้งหมด (ถ้ามี) รวมถึงค่าปรับตามข้อ 2 ภายใน 30 วัน นับจากวันที่การบอกเลิกมีผล')]),
+      item('4.2', [t('ถอดป้ายสาขา ส่งคืนอุปกรณ์ คู่มือ และข้อมูลลับที่ได้รับจากแฟรนไชส์ซอร์ และชำระหนี้ค้างชำระทั้งหมด (ถ้ามี) รวมถึงค่าปรับตามข้อ 2 ภายใน 30 วัน นับจากวันที่การบอกเลิกมีผล')]),
 
       h('5.  การสงวนสิทธิ์'),
       body([t('แฟรนไชส์ซอร์ขอสงวนสิทธิ์ในการเรียกร้องค่าเสียหายเพิ่มเติมและดำเนินการตามกฎหมายต่อไป หากแฟรนไชส์ซีไม่ปฏิบัติตามหนังสือฉบับนี้ โดยข้อพิพาทให้เป็นไปตามข้อ 9 แห่งสัญญา และหนังสือฉบับนี้ได้ส่งไปยังภูมิลำเนาของแฟรนไชส์ซีที่ระบุไว้ในสัญญา ให้ถือว่าแฟรนไชส์ซีได้รับแล้วโดยชอบตามข้อ 8')]),
 
       body([t('จึงเรียนมาเพื่อทราบและปฏิบัติตามต่อไป')]),
-      p([t('')], { after: 60 }),
       sigTable(
-        sigLines('กรรมการผู้มีอำนาจ ............................', 'ผู้บอกเลิกสัญญา (บริษัท โดมิพลัสกรุ๊ป จำกัด)'),
-        sigLines(name, 'ผู้รับหนังสือ (ลงชื่อรับทราบ)', '(กรณีรับหนังสือด้วยตนเอง)')),
-      p([t('')], { after: 40 }),
-      witnessTable(),
+        sigLines('กรรมการผู้มีอำนาจ', 'ผู้บอกเลิกสัญญา (บริษัทฯ)'),
+        sigLines(name, 'ผู้รับหนังสือ (ลงชื่อรับทราบ)')),
     ];
   }
 
   const doc = new Document({
     styles: { default: { document: { run: { font: FONT, size: BS } } } },
     sections: [{
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1100, bottom: 1000, left: 1500, right: 1300 } } },
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 760, bottom: 700, left: 1440, right: 1134 } } },
       children,
     }],
   });
