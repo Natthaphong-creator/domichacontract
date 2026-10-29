@@ -1381,7 +1381,7 @@ async function buildDocx(d) {
 
   // ─── Design tokens ────────────────────────────────────────────────────
   const FONT = "TH SarabunPSK";
-  const BS = 28, H2 = 32, TS = 36, SS = 24, LS = 340;
+  const BS = 22, H2 = 28, TS = 32, SS = 20, LS = 340;
   const NAVY='1A3A5C', BLUE='2E6DA4', LG='D6E4F0', BC='222222', GR='666666';
   const MG = { top:1440, bottom:1440, left:1701, right:1440 };
   const CW = 8765;
@@ -1532,7 +1532,7 @@ async function buildDocx(d) {
         new Paragraph({
           alignment:AlignmentType.CENTER,
           spacing:{before:0,after:80,line:360,lineRule:"auto"},
-          children:[r(`สาขา  ${F.BranchName}`,{size:32,color:BLUE})]
+          children:[r(`สาขา  ${F.BranchName}`,{size:28,color:BLUE})]
         }),
         hr(NAVY,14), spacer(100),
 
@@ -2125,7 +2125,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   } catch (e) { logoData = null; }
 
   const FONT = "TH SarabunPSK";
-  const BS = 28, SS = 24, HS = 36, TS = 36;
+  const BS = 22, SS = 20, HS = 32, TS = 32;
   const NAVY = '1A3A5C', RED = '8B0000', GR = '666666', BC = '222222';
   const NB = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
   const noBorders = { top: NB, bottom: NB, left: NB, right: NB };
@@ -2143,7 +2143,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   });
   const left   = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.LEFT });
   const center = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.CENTER });
-  const h      = (text) => p([t(text, { size: 32, bold: true, color: NAVY })], { before: 90, after: 30, align: AlignmentType.LEFT, keepNext: true });
+  const h      = (text) => p([t(text, { size: 28, bold: true, color: NAVY })], { before: 90, after: 30, align: AlignmentType.LEFT, keepNext: true });
   const item   = (num, runs) => p([t(num + '  '), ...runs], { indent: { left: 540, hanging: 400 } });
   const check  = (on, runs) => p([chk(on), ...runs], { indent: { left: 540, hanging: 340 }, align: AlignmentType.LEFT });
   const body   = (runs) => p(runs, { indent: { firstLine: 720 } });
