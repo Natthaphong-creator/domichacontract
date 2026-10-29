@@ -687,7 +687,7 @@
       <div class="db-title">Dashboard — สถานะแฟรนไชส์</div>
       <div class="db-sub">ภาพรวมสาขาทั้งหมดแยกตามสถานะและจังหวัด</div>
     </div>
-    <select id="filterType" onchange="renderDashboardAll()" style="margin-left:auto;margin-right:10px;padding:7px 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:8px;font-size:13px;background:rgba(255,255,255,.9);color:#3D1F06;">
+    <select id="filterType" onchange="renderDashboardAll()" title="กรองตารางด้านล่างตามประเภทสาขา" style="margin-left:auto;margin-right:10px;padding:7px 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:8px;font-size:13px;background:rgba(255,255,255,.9);color:#3D1F06;">
       <option value="">ทุกประเภท</option>
       <option value="FRANCHISE">แฟรนไชส์</option>
       <option value="COMPANY">สาขาบริษัท</option>
@@ -698,55 +698,82 @@
   </div>
 
   <!-- KPI Cards -->
-  <div class="kpi-grid" id="kpiGrid">
-    <div class="kpi-card kpi-co">
-      <div class="kpi-num" id="kpiCompany">—</div>
-      <div class="kpi-label">🏬 สาขาบริษัท · ทั้งหมด</div>
+  <div class="kpi-wrap" id="kpiGrid">
+
+    <div class="kpi-group">
+      <div class="kpi-group-title">📊 ภาพรวมทั้งหมด <small>(บริษัท + แฟรนไชส์)</small></div>
+      <div class="kpi-grid kpi-g3">
+      <div class="kpi-card kpi-total">
+        <div class="kpi-num" id="kpiTotal">—</div>
+        <div class="kpi-label">สาขาทั้งหมด</div>
+      </div>
+      <div class="kpi-card kpi-active">
+        <div class="kpi-num" id="kpiActive">—</div>
+        <div class="kpi-label">เปิดดำเนินการอยู่</div>
+      </div>
+      <div class="kpi-card kpi-cancel">
+        <div class="kpi-num" id="kpiCancel">—</div>
+        <div class="kpi-label">ยกเลิกแล้ว</div>
+      </div>
+      </div>
     </div>
-    <div class="kpi-card kpi-co">
-      <div class="kpi-num" id="kpiCompanyActive">—</div>
-      <div class="kpi-label">🏬 สาขาบริษัท · เปิดแล้ว</div>
+
+    <div class="kpi-group kpi-group-co">
+      <div class="kpi-group-title">🏬 สาขาบริษัท</div>
+      <div class="kpi-grid kpi-g3">
+      <div class="kpi-card kpi-co">
+        <div class="kpi-num" id="kpiCompany">—</div>
+        <div class="kpi-label">สาขาบริษัททั้งหมด</div>
+      </div>
+      <div class="kpi-card kpi-active">
+        <div class="kpi-num" id="kpiCompanyActive">—</div>
+        <div class="kpi-label">เปิดดำเนินการอยู่</div>
+      </div>
+      <div class="kpi-card kpi-training">
+        <div class="kpi-num" id="kpiCompanyTraining">—</div>
+        <div class="kpi-label">เตรียมเปิด / อบรม</div>
+      </div>
+      </div>
     </div>
-    <div class="kpi-card kpi-fr">
-      <div class="kpi-num" id="kpiFranchise">—</div>
-      <div class="kpi-label">🧋 แฟรนไชส์ · ทั้งหมด</div>
+
+    <div class="kpi-group kpi-group-fr">
+      <div class="kpi-group-title">🧋 สาขาแฟรนไชส์ <small>(เรียงตามขั้นตอนสัญญา)</small></div>
+      <div class="kpi-grid kpi-g4">
+      <div class="kpi-card kpi-fr">
+        <div class="kpi-num" id="kpiFranchise">—</div>
+        <div class="kpi-label">แฟรนไชส์ทั้งหมด</div>
+      </div>
+      <div class="kpi-card kpi-generated">
+        <div class="kpi-num" id="kpiGenerated">—</div>
+        <div class="kpi-label">① สร้างสัญญาแล้ว</div>
+      </div>
+      <div class="kpi-card kpi-sent">
+        <div class="kpi-num" id="kpiSent">—</div>
+        <div class="kpi-label">② ส่งสัญญาแล้ว</div>
+      </div>
+      <div class="kpi-card kpi-signed">
+        <div class="kpi-num" id="kpiSigned">—</div>
+        <div class="kpi-label">③ เซ็นสัญญาแล้ว</div>
+      </div>
+      <div class="kpi-card kpi-paid">
+        <div class="kpi-num" id="kpiPaid">—</div>
+        <div class="kpi-label">④ ชำระเงินแล้ว</div>
+      </div>
+      <div class="kpi-card kpi-training">
+        <div class="kpi-num" id="kpiTraining">—</div>
+        <div class="kpi-label">⑤ อบรม</div>
+      </div>
+      <div class="kpi-card kpi-active">
+        <div class="kpi-num" id="kpiFranchiseActive">—</div>
+        <div class="kpi-label">⑥ เปิดสาขาแล้ว</div>
+      </div>
+      <div class="kpi-card kpi-cancel">
+        <div class="kpi-num" id="kpiFranchiseCancel">—</div>
+        <div class="kpi-label">ยกเลิกแล้ว</div>
+      </div>
+      </div>
     </div>
-    <div class="kpi-card kpi-fr">
-      <div class="kpi-num" id="kpiFranchiseActive">—</div>
-      <div class="kpi-label">🧋 แฟรนไชส์ · เปิดแล้ว</div>
-    </div>
-    <div class="kpi-card kpi-total">
-      <div class="kpi-num" id="kpiTotal">—</div>
-      <div class="kpi-label">สาขาทั้งหมด</div>
-    </div>
-    <div class="kpi-card kpi-active">
-      <div class="kpi-num" id="kpiActive">—</div>
-      <div class="kpi-label">ACTIVE · เปิดแล้ว</div>
-    </div>
-    <div class="kpi-card kpi-training">
-      <div class="kpi-num" id="kpiTraining">—</div>
-      <div class="kpi-label">TRAINING · อบรม</div>
-    </div>
-    <div class="kpi-card kpi-paid">
-      <div class="kpi-num" id="kpiPaid">—</div>
-      <div class="kpi-label">PAID · ชำระแล้ว</div>
-    </div>
-    <div class="kpi-card kpi-signed">
-      <div class="kpi-num" id="kpiSigned">—</div>
-      <div class="kpi-label">SIGNED · เซ็นแล้ว</div>
-    </div>
-    <div class="kpi-card kpi-sent">
-      <div class="kpi-num" id="kpiSent">—</div>
-      <div class="kpi-label">SENT · ส่งแล้ว</div>
-    </div>
-    <div class="kpi-card kpi-generated">
-      <div class="kpi-num" id="kpiGenerated">—</div>
-      <div class="kpi-label">GENERATED · สร้างแล้ว</div>
-    </div>
-    <div class="kpi-card kpi-cancel">
-      <div class="kpi-num" id="kpiCancel">—</div>
-      <div class="kpi-label">ยกเลิกแล้ว</div>
-    </div>
+
   </div>
 
   <!-- Province + Branch tables -->
@@ -874,6 +901,21 @@
     margin-bottom: 6px;
   }
   .kpi-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .kpi-wrap {
+    background: var(--light);
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    padding: 18px 20px 4px;
+  }
+  .kpi-wrap .kpi-grid { padding: 0; border: none; background: none; }
+  .kpi-wrap .kpi-g3 { grid-template-columns: repeat(3, 1fr); }
+  .kpi-wrap .kpi-g4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 700px) { .kpi-wrap .kpi-g4 { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-group { margin-bottom: 18px; }
+  .kpi-group-title { font-size: 15px; font-weight: 700; color: #7a2e10; margin: 0 0 8px 2px; }
+  .kpi-group-title small { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .kpi-group-co .kpi-group-title { color: #1d4ed8; }
+  .kpi-group-fr .kpi-group-title { color: #b45309; }
 
   .kpi-total    .kpi-num { color: #a63d17; }
   .kpi-active   .kpi-num { color: #16a34a; }
@@ -1012,14 +1054,8 @@ function typeFiltered() {
 }
 
 function renderDashboardAll() {
-  const isCo = b => b.branchType === 'COMPANY';
-  const co = _dashData.filter(isCo), fr = _dashData.filter(b => !isCo(b));
-  document.getElementById('kpiCompany').textContent         = co.length;
-  document.getElementById('kpiCompanyActive').textContent   = co.filter(b => b.status === 'ACTIVE').length;
-  document.getElementById('kpiFranchise').textContent       = fr.length;
-  document.getElementById('kpiFranchiseActive').textContent = fr.filter(b => b.status === 'ACTIVE').length;
-  const d = typeFiltered();
-  renderKPI(d);
+  renderKPI(_dashData);                 // การ์ดสรุป: นับทั้งหมดเสมอ
+  const d = typeFiltered();             // ตาราง: กรองตามประเภทที่เลือก
   renderProvinceTable(d);
   renderBranchTable();
 }
@@ -1031,17 +1067,32 @@ function typeBadge(t) {
 }
 
 function renderKPI(data) {
-  const count = (s) => data.filter(b => b.status === s).length;
-  const cancelled = data.filter(b => b.status && b.status.startsWith('CANCELLED')).length;
+  const isCo   = b => b.branchType === 'COMPANY';
+  const isCan  = b => b.status && b.status.startsWith('CANCELLED');
+  const co     = data.filter(isCo);
+  const fr     = data.filter(b => !isCo(b));
+  const cnt    = (arr, s) => arr.filter(b => b.status === s).length;
+  const set    = (id, v) => { document.getElementById(id).textContent = v; };
 
-  document.getElementById('kpiTotal').textContent     = data.length;
-  document.getElementById('kpiActive').textContent    = count('ACTIVE');
-  document.getElementById('kpiTraining').textContent  = count('TRAINING');
-  document.getElementById('kpiPaid').textContent      = count('PAID');
-  document.getElementById('kpiSigned').textContent    = count('SIGNED');
-  document.getElementById('kpiSent').textContent      = count('SENT');
-  document.getElementById('kpiGenerated').textContent = count('GENERATED');
-  document.getElementById('kpiCancel').textContent    = cancelled;
+  // ภาพรวม
+  set('kpiTotal',  data.length);
+  set('kpiActive', cnt(data, 'ACTIVE'));
+  set('kpiCancel', data.filter(isCan).length);
+
+  // สาขาบริษัท
+  set('kpiCompany',         co.length);
+  set('kpiCompanyActive',   cnt(co, 'ACTIVE'));
+  set('kpiCompanyTraining', cnt(co, 'TRAINING'));
+
+  // แฟรนไชส์ (ตามขั้นตอน)
+  set('kpiFranchise',       fr.length);
+  set('kpiGenerated',       cnt(fr, 'GENERATED'));
+  set('kpiSent',            cnt(fr, 'SENT'));
+  set('kpiSigned',          cnt(fr, 'SIGNED'));
+  set('kpiPaid',            cnt(fr, 'PAID'));
+  set('kpiTraining',        cnt(fr, 'TRAINING'));
+  set('kpiFranchiseActive', cnt(fr, 'ACTIVE'));
+  set('kpiFranchiseCancel', fr.filter(isCan).length);
 }
 
 function renderProvinceTable(data) {
