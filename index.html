@@ -2137,7 +2137,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const chk = (on) => new TextRun({ text: on ? '☑ ' : '☐ ', font: 'Segoe UI Symbol', size: BS, color: BC });
   const p = (runs, o = {}) => new Paragraph({
     alignment: o.align ?? AlignmentType.THAI_DISTRIBUTE,
-    spacing: { line: 264, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? 40 },
+    spacing: { line: 276, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? 60 },
     indent: o.indent, keepNext: o.keepNext,
     children: Array.isArray(runs) ? runs : [runs],
   });
@@ -2150,7 +2150,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const rule   = () => new Paragraph({ spacing: { before: 0, after: 100 },
     border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: NAVY, space: 2 } }, children: [new TextRun('')] });
 
-  const W = 4400, GAP = 400;
+  const W = 4300, GAP = 400;
   const sigCell = (lines, w = W) => new TableCell({
     width: { size: w, type: WidthType.DXA }, borders: noBorders, verticalAlign: VerticalAlign.TOP, children: lines });
   const sigLines = (name, role, note) => [
@@ -2285,7 +2285,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const doc = new Document({
     styles: { default: { document: { run: { font: FONT, size: BS } } } },
     sections: [{
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1000, bottom: 900, left: 1440, right: 1134 } } },
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1417, bottom: 1134, left: 1701, right: 1134 } } },
       children,
     }],
   });
