@@ -2117,7 +2117,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   } catch (e) { logoData = null; }
 
   const FONT = "TH SarabunPSK";
-  const BS = 32, SS = 28, HS = 40, TS = 40;
+  const BS = 28, SS = 24, HS = 36, TS = 36;
   const NAVY = '1A3A5C', RED = '8B0000', GR = '666666', BC = '222222';
   const NB = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
   const noBorders = { top: NB, bottom: NB, left: NB, right: NB };
@@ -2129,13 +2129,13 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const chk = (on) => new TextRun({ text: on ? '☑ ' : '☐ ', font: 'Segoe UI Symbol', size: BS, color: BC });
   const p = (runs, o = {}) => new Paragraph({
     alignment: o.align ?? AlignmentType.THAI_DISTRIBUTE,
-    spacing: { line: 252, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? 30 },
+    spacing: { line: 264, lineRule: 'auto', before: o.before ?? 0, after: o.after ?? 40 },
     indent: o.indent, keepNext: o.keepNext,
     children: Array.isArray(runs) ? runs : [runs],
   });
   const left   = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.LEFT });
   const center = (runs, o = {}) => p(runs, { ...o, align: AlignmentType.CENTER });
-  const h      = (text) => p([t(text, { size: 36, bold: true, color: NAVY })], { before: 70, after: 20, align: AlignmentType.LEFT, keepNext: true });
+  const h      = (text) => p([t(text, { size: 32, bold: true, color: NAVY })], { before: 90, after: 30, align: AlignmentType.LEFT, keepNext: true });
   const item   = (num, runs) => p([t(num + '  '), ...runs], { indent: { left: 540, hanging: 400 } });
   const check  = (on, runs) => p([chk(on), ...runs], { indent: { left: 540, hanging: 340 }, align: AlignmentType.LEFT });
   const body   = (runs) => p(runs, { indent: { firstLine: 720 } });
@@ -2277,7 +2277,7 @@ async function buildCancelDocx(branch, cancelType, cancelDate, cancelReason, opt
   const doc = new Document({
     styles: { default: { document: { run: { font: FONT, size: BS } } } },
     sections: [{
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 900, bottom: 800, left: 1440, right: 1134 } } },
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1000, bottom: 900, left: 1440, right: 1134 } } },
       children,
     }],
   });
